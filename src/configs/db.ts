@@ -1,19 +1,20 @@
 import mongoose from "mongoose";
-import 'stylesh'
-require('dotenv').config;
+import "stylesh";
+import dotenv from "dotenv";
+// dotenv.config({ path: "../config.env" });
 
-
-const dbURL: string = process.env.DB_URI || '';
+process.env.DB_URL = "mongodb://localhost:27017/clothesStore";
+const dbURL: string = process.env.DB_URL || "";
+console.log("url: ", dbURL);
 
 const connectDB = async () => {
-    try {
-        await mongoose.connect(dbURL).then((data: any) => {
-            console.log(`Database connected with ${`${data.connection.name}`.color('lime')}`.createSolidBorder('lime'))
-        })
-    } catch (error: any) {
-        console.log(error.message);
-        setTimeout(connectDB, 5000);
-    }
-}
+  try {
+    await mongoose.connect(dbURL).then((data: any) => {
+      console.log(`Database connected with ${data.connection.name}`);
+    });
+  } catch (error: any) {
+    console.log(error.message);
+  }
+};
 
-export default connectDB
+export default connectDB;

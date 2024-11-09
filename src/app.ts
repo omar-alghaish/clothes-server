@@ -3,7 +3,7 @@ import express, { NextFunction, Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import cors from "cors";
 import { errorMiddleware } from "./middlewares/error";
-import routes from "./routes";
+import itemRouter from "./routes/itemRoutes";
 
 export const app = express();
 
@@ -21,7 +21,8 @@ app.use(
 );
 
 // routes
-app.use("/api/v1", routes);
+app.use("/api/v1/items", itemRouter);
+
 // testing api
 app.get("/test", (req: Request, res: Response, next: NextFunction) => {
   res.status(200).json({
