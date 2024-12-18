@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import { errorMiddleware } from "./middlewares/error";
 import itemRouter from "./routes/itemRoutes";
+import userRouter from './routes/userRoutes'
 
 export const app = express();
 
@@ -22,6 +23,7 @@ app.use(
 
 // routes
 app.use("/api/v1/items", itemRouter);
+app.use('/api/v1/users', userRouter)
 
 // testing api
 app.get("/test", (req: Request, res: Response, next: NextFunction) => {
