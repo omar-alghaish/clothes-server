@@ -7,14 +7,14 @@ export interface IUser extends Document {
   email: string;
   password: string;
   passwordConfirm: string;
-  role: "user" | "admin";
+  role: "user" | "seller" | "admin"; 
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 
 // User Schema
-const userSchema: Schema = new Schema<IUser>(
+const userSchema: Schema<IUser> = new Schema<IUser>(
   {
     name: {
       type: String,
@@ -34,9 +34,10 @@ const userSchema: Schema = new Schema<IUser>(
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
     },
+
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "seller", "admin"],
       default: "user",
     },
   },
@@ -67,4 +68,4 @@ userSchema.methods.comparePassword = async function (
 };
 
 // Export the User model
-export const user = mongoose.model<IUser>("user", userSchema);
+export const User = mongoose.model<IUser>("User", userSchema); // Fixed: Changed "user" to "User" for consistency

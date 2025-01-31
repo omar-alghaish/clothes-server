@@ -1,23 +1,40 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema, Model } from "mongoose";
 
-export interface Iitem extends Document {
+// Interface for the Item document
+export interface IItem extends Document {
   name: string;
   description: string;
   sizes: string[];
   price: number;
   images: string[];
+  seller: mongoose.Types.ObjectId; // Reference to the User model
   createdAt: Date;
+  updatedAt: Date;
 }
 
-const itemSchema: Schema = new Schema<Iitem>(
+interface IItemModel extends Model<IItem> {
+  verifyOwner(item: IItem, userId: string): Promise<IItem>;
+}
+
+const itemSchema: Schema<IItem> = new Schema<IItem>(
   {
     name: { type: String, required: true },
     description: { type: String, required: true },
     sizes: { type: [String], required: true },
     price: { type: Number, required: true },
     images: { type: [String], required: true },
+    seller: {
+      type: mongoose.Schema.Types.ObjectId, // Reference to the User model
+      ref: "User", // Name of the referenced model
+      required: true,
+    },
   },
-  { timestamps: true }
+  { timestamps: true } // Automatically add createdAt and updatedAt fields
 );
 
-export const item = mongoose.model<Iitem>("item", itemSchema);
+itemSchema.statics.verifyOwner = async function (item: IItem, userId: string) {
+  return item.seller.toString() === userId.toString();
+};
+
+// Export the Item model
+export const Item = mongoose.model<IItem, IItemModel>("Item", itemSchema);

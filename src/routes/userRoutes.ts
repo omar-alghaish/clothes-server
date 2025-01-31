@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { signUp } from "./../controllers/authController";
 import { signIn } from "./../controllers/authController";
+import { authorize } from "./../controllers/authController";
 import { forgotPassword } from "./../controllers/authController";
 import { resetPassword } from "./../controllers/authController";
 

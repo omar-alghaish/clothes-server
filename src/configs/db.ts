@@ -3,7 +3,7 @@ import "stylesh";
 import dotenv from "dotenv";
 // dotenv.config({ path: "../config.env" });
 
-process.env.DB_URL = "mongodb://localhost:27017/clothesStore";
+process.env.DB_URL = "mongodb://127.0.0.1:27017/clotheStore";
 const dbURL: string = process.env.DB_URL || "";
 console.log("url: ", dbURL);
 

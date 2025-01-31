@@ -1,15 +1,23 @@
 import { Router } from "express";
-import { item } from "../models/itemModel";
+import { Item } from "../models/itemModel";
 import { getAllItems } from "../controllers/itemController";
 import { createItem } from "../controllers/itemController";
 import { updateItem } from "../controllers/itemController";
 import { deleteItem } from "../controllers/itemController";
+import { getOneItem } from "../controllers/itemController";
+
+import {protect, restrictTo, getSellerItems} from '../controllers/authController'
 const router = Router();
 
 router.get("/", getAllItems);
-router.post("/", createItem);
+router.get("/:id", getOneItem);
 
-router.patch("/:id", updateItem);
-router.delete("/:id", deleteItem);
+
+router.get("/my-items", protect, getSellerItems);
+
+router.post("/", protect,restrictTo('seller'), createItem);
+
+router.patch("/:id", protect,  updateItem);
+router.delete("/:id", protect, deleteItem);
 
 export default router;
