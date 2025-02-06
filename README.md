@@ -35,7 +35,7 @@ Before you begin, make sure you have the following installed on your machine:
 2. Navigate to the directory where you want to clone the project.
 3. Run the following command to clone the repository:
    ```bash
-   git clone https://github.com/omar-alghaish/clothes-server.git
+   git clone -b myBranch https://github.com/omar-alghaish/clothes-server.git
    ```
 4. Navigate into the project directory:
    ```bash
