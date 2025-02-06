@@ -3,14 +3,12 @@ import { User, IUser } from "../models/userModel";
 import { Item } from "../models/itemModel"; 
 import asyncHandler from "../utils/catchAsyncError";
 import { AppError } from "../utils/appError";
-import { promisify } from 'util';
-
 
 import jwt from "jsonwebtoken";
 
 const signToken = (id: string): string => {
-  return jwt.sign({ id }, "THIS_IS_SECRET_KEY", {
-    expiresIn: "60d",
+  return jwt.sign({ id }, process.env.JWT_SECRET as string, {
+    expiresIn: process.env.JWT_EXPIRES_IN,
   });
 };
 
@@ -110,8 +108,8 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
 
   if (!token || !token.startsWith('Bearer')) {
     return next(new AppError('You are not logged in! Please log in first.', 401)); // 401 => unprotectd
-  }
-
+  }  
+  
   token = token.split(' ')[1];
   
   if (!token) {
@@ -122,7 +120,6 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
   const decoded = await verifyToken(token, "THIS_IS_SECRET_KEY");
   // 3) Check if user still exists  
   const currentUser = await User.findById(decoded.id);
-  console.log(currentUser);
   if (!currentUser) {
     return next(new AppError('The user belonging to this token does no longer exist.', 401));
   }

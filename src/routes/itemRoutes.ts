@@ -9,14 +9,13 @@ import { getOneItem } from "../controllers/itemController";
 import {protect, restrictTo, getSellerItems} from '../controllers/authController'
 const router = Router();
 
+// public endpoints
 router.get("/", getAllItems);
 router.get("/:id", getOneItem);
 
-
+// seller endpoints
 router.get("/my-items", protect, getSellerItems);
-
 router.post("/", protect,restrictTo('seller'), createItem);
-
 router.patch("/:id", protect,  updateItem);
 router.delete("/:id", protect, deleteItem);
 
