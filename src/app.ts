@@ -30,7 +30,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/cart", cartRouter);
 app.use("/api/v1/orders", orderRouter);
 
-app.use("/api/discounts", discountRouter);
+app.use("/api/v1/discounts", discountRouter);
 // testing api
 app.get("/test", (req: Request, res: Response, next: NextFunction) => {
   res.status(200).json({
