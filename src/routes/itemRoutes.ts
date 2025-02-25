@@ -1,15 +1,26 @@
 import { Router } from "express";
-import { item } from "../models/itemModel";
+import { Item } from "../models/itemModel";
 import { getAllItems } from "../controllers/itemController";
 import { createItem } from "../controllers/itemController";
 import { updateItem } from "../controllers/itemController";
 import { deleteItem } from "../controllers/itemController";
+import { getOneItem } from "../controllers/itemController";
+const multer  = require('multer')
+import {protect, restrictTo, getSellerItems} from '../controllers/authController'
+
 const router = Router();
 
-router.get("/", getAllItems);
-router.post("/", createItem);
 
-router.patch("/:id", updateItem);
-router.delete("/:id", deleteItem);
+const upload = multer({ dest: './../uploads' })
+
+// public endpoints
+router.get("/", getAllItems);
+router.get("/:id", getOneItem);
+
+// seller endpoints
+router.get("/my-items", protect, getSellerItems);
+router.post("/", protect,restrictTo('seller'),upload.single('photo'), createItem);
+router.patch("/:id", protect,  updateItem);
+router.delete("/:id", protect, deleteItem);
 
 export default router;
