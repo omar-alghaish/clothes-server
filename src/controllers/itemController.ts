@@ -3,11 +3,66 @@ import { Item, IItem } from "../models/itemModel";
 import asyncHandler from "../utils/catchAsyncError";
 import { AppError } from "../utils/appError";
 import { IUser } from "../models/userModel"; 
+import cloudinary from "../configs/cloudinaryConfig";
+import multer from "multer";
+import sharp from "sharp";
+import { log } from "util";
+
+const multerStorage = multer.memoryStorage()
+
+function multerFilter(req: Request, file: Express.Multer.File, cb: Function) {
+  if (file.mimetype.startsWith('image')) cb(null, true);
+  else cb(new AppError('not an image! please upload only images.', 400), false);
+}
+const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
+
+export const uploaditemImages = upload.fields([
+  { name: 'imageCover', maxCount: 1 },
+  { name: 'images', maxCount: 3 },
+]);
+
+export const resizeitemImages = asyncHandler(async (req, res, next) => {
+  // Ensure req.files exists and has the expected structure
+  if (!req.files || !('imageCover' in req.files) || !('images' in req.files)) {
+    return next();
+  }
+
+  // 1) Cover image
+  req.body.imageCover = `item-${req.params.id}-${Date.now()}-cover.jpeg`;
+  await sharp(req.files.imageCover[0].buffer)
+    .resize(2000, 1333)
+    .toFormat('jpeg')
+    .jpeg({ quality: 90 })
+    .toFile(`uploads/img/items/${req.body.imageCover}`);
+
+  // 2) Images
+  req.body.images = [];
+
+  await Promise.all(
+    req.files.images.map(async (file, i) => {
+      const filename = `item-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
+
+      await sharp(file.buffer)
+        .resize(2000, 1333)
+        .toFormat('jpeg')
+        .jpeg({ quality: 90 })
+        .toFile(`uploads/img/items/${filename}`);
+
+      req.body.images.push(filename);
+    })
+  );
+
+  next();
+}); 
+
+
 
 export const getAllItems = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
+    console.log('hello');
+    
     const items = await Item.find();
-
+    console.log(items)
     if (items.length === 0) {
       return next(new AppError("No items found", 404));
     }
@@ -39,7 +94,7 @@ export const getOneItem = asyncHandler(
 );
 
 export const createItem = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {  
     // Extract the item details from the request body
     const { name, description, sizes, price, images } = req.body;
 

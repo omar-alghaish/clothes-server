@@ -1,15 +1,15 @@
 import { Router } from "express";
-import { signUp } from "./../controllers/authController";
-import { signIn } from "./../controllers/authController";
-import { forgotPassword } from "./../controllers/authController";
-import { resetPassword } from "./../controllers/authController";
+import { protect, signUp, signIn, forgotPassword, resetPassword} from "./../controllers/authController";
+import { uploadUserphoto, resizeUserPhoto,uploadUserPhotoToCloudinary, updateMe } from "./../controllers/userController";
 
 const router = Router();
 
 router.post("/register", signUp);
 router.post("/login", signIn);
 
-router.post("/forgot password", forgotPassword);
+router.post("/forgotPassword", forgotPassword);
 router.patch("/resetPassword/:token", resetPassword);
+
+router.patch("/updateMe",protect,  uploadUserphoto, resizeUserPhoto, uploadUserPhotoToCloudinary, updateMe);
 
 export default router;

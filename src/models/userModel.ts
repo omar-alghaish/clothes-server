@@ -8,6 +8,7 @@ export interface IUser extends Document {
   password: string;
   passwordConfirm: string;
   role: "user" | "seller" | "admin"; 
+  photo?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -39,6 +40,9 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
       type: String,
       enum: ["user", "seller", "admin"],
       default: "user",
+    },
+    photo: {
+      type: String
     },
   },
   {

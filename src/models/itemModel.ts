@@ -6,6 +6,7 @@ export interface IItem extends Document {
   description: string;
   sizes: string[];
   price: number;
+  imageCover: string;
   images: string[];
   seller: mongoose.Types.ObjectId; // Reference to the User model
   createdAt: Date;
@@ -22,6 +23,11 @@ const itemSchema: Schema<IItem> = new Schema<IItem>(
     description: { type: String, required: true },
     sizes: { type: [String], required: true },
     price: { type: Number, required: true },
+    imageCover: {
+      type: String,
+      trim: true,
+      required: [true, 'A tour must have an image cover']
+    },
     images: { type: [String], required: true },
     seller: {
       type: mongoose.Schema.Types.ObjectId, // Reference to the User model

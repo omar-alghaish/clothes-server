@@ -19,6 +19,7 @@ const createSendToken = (user: IUser, status: number, res: Response): void => {
     name: user.name,
     email: user.email,
     role: user.role,
+    photo: user.photo
   };
 
   res.status(status).json({
@@ -36,7 +37,7 @@ export const signUp = asyncHandler(
       name: req.body.name,
       email: req.body.email,
       role: req.body.role,
-      // photo: req.body.photo,  // Uncomment if photo handling is added
+      photo: req.file?.filename, 
       password: req.body.password,
     });
 
