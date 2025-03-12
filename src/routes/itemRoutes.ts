@@ -13,14 +13,15 @@ const router = Router();
 
 const upload = multer({ dest: './../uploads' })
 
+// seller endpoints
+router.get("/my-items", protect, getSellerItems);
+router.post("/", protect, restrictTo('seller'), createItem);
+router.patch("/:id", protect,  updateItem);
+router.delete("/:id", protect, deleteItem);
+
 // public endpoints
 router.get("/", getAllItems);
 router.get("/:id", getOneItem);
 
-// seller endpoints
-router.get("/my-items", protect, getSellerItems);
-router.post("/", protect,restrictTo('seller'),upload.single('photo'), createItem);
-router.patch("/:id", protect,  updateItem);
-router.delete("/:id", protect, deleteItem);
 
 export default router;

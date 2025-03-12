@@ -38,10 +38,11 @@ export const createOrder = asyncHandler(
     }
 );
 
-export const getAllOrders = asyncHandler(
+export const getMyOrders = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
         
         const userId = req.user?.id
+        
         const orders = await Order.find({user: userId})
 
         if (orders.length < 1){

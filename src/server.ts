@@ -3,7 +3,6 @@ dotenv.config();
 import { app } from "./app";
 import "stylesh";
 import connectDB from "./configs/db";
-import { v2 as cloudinary } from "cloudinary"
 
 
 // cloudinary config

@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { User, IUser } from "../models/userModel"; 
+import { Brand, IBrand } from "../models/brandModel"; 
 import { Item } from "../models/itemModel"; 
 import asyncHandler from "../utils/catchAsyncError";
 import { AppError } from "../utils/appError";
@@ -12,36 +13,75 @@ const signToken = (id: string): string => {
   });
 };
 
-const createSendToken = (user: IUser, status: number, res: Response): void => {
+const createSendToken = (user: IUser, status: number, res: Response, brand?: IBrand): void => {
+  
   const token = signToken(user.id);
 
-  const userWithoutSensitiveData = {
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    photo: user.photo
-  };
+  let newUser;
+  if(user.role === "user"){
+    newUser = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+    }
+  }
+  else if (user.role === "seller" && user.brand) {
+    newUser = {
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      role: user.role,
+      brand: brand
+    }
+  }
 
   res.status(status).json({
     status: "success",
     token,
     data: {
-      userWithoutSensitiveData,
+      newUser,
     },
   });
 };
 
 export const signUp = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
+    // const {firstName, lastName, email, password} = req.body
+    
+    const { firstName, lastName, email, password, passwordConfirm, role, brandName, brandDescription, brandStyle, brandLogo,
+      primaryColor, businessAddress, phoneNumber, website, taxId } = req.body;
+
+    if(!firstName || !lastName ||!email || !password){
+      return next(new AppError('All fields are required!', 400));
+    }
+
+
+    if (role === "seller" && (!brandName || !brandDescription || !brandStyle || !brandLogo ||
+      !primaryColor || !businessAddress || !phoneNumber || !website || !taxId)) {
+        return next(new AppError('Brand details are required for seller registration!', 400));
+    }
+    
+    if (password !== passwordConfirm) {
+      return next(new AppError("password and passwordConfirm do not match.", 400));
+    }
     const newUser = await User.create({
-      name: req.body.name,
-      email: req.body.email,
-      role: req.body.role,
-      photo: req.file?.filename, 
-      password: req.body.password,
+      firstName, lastName, email, password, passwordConfirm, role
     });
 
-    createSendToken(newUser, 201, res);
+    
+    let brand;
+    if(role === "seller"){
+        brand = await Brand.create({
+        brandName, brandDescription, brandStyle, brandLogo, primaryColor, businessAddress, phoneNumber,
+        website, taxId, user: newUser.id
+      })
+      //add the brand id to the user object (newUser.brand)
+      newUser.brand = brand.id
+      newUser.save()
+    }
+
+    createSendToken(newUser, 201, res, brand);
   }
 );
 
@@ -105,6 +145,7 @@ const verifyToken = (token: string, secret: string): Promise<DecodedToken> => {
 
 export const protect = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
   // 1) Checking if the token exists
+  
   let token: string | undefined = req.headers.authorization;
 
   if (!token || !token.startsWith('Bearer')) {
@@ -131,8 +172,6 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
   // Grant access to the protected route
   next();
 });
-
-
 
 export const restrictTo = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -164,3 +203,9 @@ export const getSellerItems = asyncHandler(
     });
   }
 );
+
+
+
+
+
+

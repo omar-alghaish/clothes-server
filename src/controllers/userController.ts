@@ -92,3 +92,17 @@ export const updateMe = asyncHandler(
       })
     }
 );
+
+export const getMe = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+
+    const user = await User.findById(req.user?.id)
+
+    res.status(200).json({
+      status: 'success',
+      data:{
+        user
+      }
+    })
+  }
+);

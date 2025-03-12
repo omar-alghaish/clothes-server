@@ -1,10 +1,17 @@
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcrypt";
+import { Order } from "./orderModel";
 
 // Interface for User Document
 export interface IUser extends Document {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
+  phone: string;
+  gender: "male" | "female";
+  favourits: mongoose.Schema.Types.ObjectId[];
+  orders: mongoose.Schema.Types.ObjectId[];
+  addresses: mongoose.Schema.Types.ObjectId[];
   password: string;
   passwordConfirm: string;
   role: "user" | "seller" | "admin"; 
@@ -12,12 +19,18 @@ export interface IUser extends Document {
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  brand?: mongoose.Schema.Types.ObjectId;
 }
 
 // User Schema
 const userSchema: Schema<IUser> = new Schema<IUser>(
   {
-    name: {
+    firstName: {
+      type: String,
+      required: [true, "User name is required"],
+      trim: true,
+    },
+    lastName: {
       type: String,
       required: [true, "User name is required"],
       trim: true,
@@ -30,23 +43,51 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
       trim: true,
       match: [/\S+@\S+\.\S+/, "Please use a valid email address"],
     },
+    phone:{
+      type: String
+    },
+    gender: {
+      type: String,
+      enum: ["male", "female"],
+      default: "male",
+    },
+    favourits: {
+      type: [mongoose.Schema.Types.ObjectId], 
+      ref: "Item",
+    },
+    orders: {
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Order"
+    },
+    addresses:{ 
+      type: [mongoose.Schema.Types.ObjectId],
+      ref: "Address"
+    },
     password: {
       type: String,
       required: [true, "Password is required"],
       minlength: [6, "Password must be at least 6 characters long"],
     },
-
+    passwordConfirm: {
+      type: String,
+      required: [true, "Please confirm your password"],
+    },
     role: {
       type: String,
       enum: ["user", "seller", "admin"],
       default: "user",
     },
     photo: {
-      type: String
+      type: String,
+      default: "photo.jpg"
+    },
+    brand: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Brand", 
     },
   },
   {
-    timestamps: true, // Automatically add createdAt and updatedAt fields
+    timestamps: true, 
   }
 );
 
@@ -72,4 +113,4 @@ userSchema.methods.comparePassword = async function (
 };
 
 // Export the User model
-export const User = mongoose.model<IUser>("User", userSchema); // Fixed: Changed "user" to "User" for consistency
+export const User = mongoose.model<IUser>("User", userSchema); 
