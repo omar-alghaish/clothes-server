@@ -60,11 +60,14 @@ export const uploadUserPhotoToCloudinary = asyncHandler(
 
 
 // A filter function to extract text fileds needs to be updated from req.body
-const filterObj = <T extends Record<string, any>>(obj: T, ...allowedFields: (keyof T)[]): Partial<T> => {
+const filterObj = <T extends Record<string, any>>(
+  obj: T,
+  ...allowedFields: (keyof T)[]
+): Partial<T> => {
   const newObj: Partial<T> = {};
   Object.keys(obj).forEach((el) => {
     if (allowedFields.includes(el as keyof T)) {
-      newObj[el as keyof T] = obj[el as keyof T];
+      newObj[el as keyof T] = obj[el];
     }
   });
   return newObj;
@@ -72,17 +75,15 @@ const filterObj = <T extends Record<string, any>>(obj: T, ...allowedFields: (key
 
 export const updateMe = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
-
-      const filedsToBeUpdated = filterObj(req.body, 'name', 'email')
+      const filedsToBeUpdated = filterObj(req.body, 'firstName', 'lastName', 'email', 'gender', 'phone')
       if(req.file) 
         filedsToBeUpdated.photo = req.file.filename
       
-
+      
       const updatedUser = await User.findByIdAndUpdate(req.user?.id, filedsToBeUpdated, {
         new: true,
         runValidators: true,
-      })
-
+      }).select("-password -passwordConfirm")
       
       res.status(200).json({
         status: 'success',
@@ -96,7 +97,11 @@ export const updateMe = asyncHandler(
 export const getMe = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
 
-    const user = await User.findById(req.user?.id)
+    const user = await User.findById(req.user?.id).select("-password -passwordConfirm")
+
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
 
     res.status(200).json({
       status: 'success',
@@ -104,5 +109,18 @@ export const getMe = asyncHandler(
         user
       }
     })
+  }
+);
+
+export const deleteMe = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    
+    const userId = req.user?.id;
+    await User.findByIdAndUpdate(userId, { active: false });
+
+    res.status(204).json({
+      status: 'success',
+      data: null,
+    });
   }
 );

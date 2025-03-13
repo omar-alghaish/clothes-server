@@ -103,7 +103,37 @@ export const signIn = asyncHandler(
     }
 
     // Send token
-    createSendToken(existingUser, 200, res);
+    // createSendToken(existingUser, 200, res);
+    let userWithoutSensitiveData;
+
+    if(existingUser.role == 'seller' && existingUser.brand){
+      userWithoutSensitiveData = {
+        firsName: existingUser.firstName,
+        lastName: existingUser.lastName,
+        email: existingUser.email,
+        photo: existingUser.photo,
+        role: existingUser.role,
+        brand: existingUser.brand
+      }
+    }
+    else{
+      userWithoutSensitiveData = {
+        firsName: existingUser.firstName,
+        lastName: existingUser.lastName,
+        email: existingUser.email,
+        photo: existingUser.photo,
+        role: existingUser.role
+      }  
+    }
+
+    const token = signToken(existingUser.id);
+    res.status(200).json({
+      status: "success",
+      token,
+      data: {
+        userWithoutSensitiveData,
+      },
+    }); 
   }
 );
 

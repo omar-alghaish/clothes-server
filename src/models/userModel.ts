@@ -13,13 +13,14 @@ export interface IUser extends Document {
   orders: mongoose.Schema.Types.ObjectId[];
   addresses: mongoose.Schema.Types.ObjectId[];
   password: string;
-  passwordConfirm: string;
+  passwordConfirm: string | undefined;
   role: "user" | "seller" | "admin"; 
   photo?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
   brand?: mongoose.Schema.Types.ObjectId;
+  active: boolean;
 }
 
 // User Schema
@@ -70,7 +71,7 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
     },
     passwordConfirm: {
       type: String,
-      required: [true, "Please confirm your password"],
+      required: [true, "Please confirm your password"]
     },
     role: {
       type: String,
@@ -84,6 +85,10 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
     brand: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Brand", 
+    },
+    active: {
+      type: Boolean,
+      default: true, 
     },
   },
   {
@@ -99,6 +104,7 @@ userSchema.pre<IUser>("save", async function (next) {
   try {
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
+    this.passwordConfirm = undefined;
     next();
   } catch (err) {
     next(err as Error);

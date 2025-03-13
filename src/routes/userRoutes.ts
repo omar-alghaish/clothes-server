@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { protect, signUp, signIn, forgotPassword, resetPassword} from "./../controllers/authController";
-import { uploadUserphoto, resizeUserPhoto,uploadUserPhotoToCloudinary, updateMe, getMe } from "./../controllers/userController";
+import { uploadUserphoto, resizeUserPhoto,uploadUserPhotoToCloudinary, updateMe, getMe, deleteMe } from "./../controllers/userController";
 
 const router = Router();
 
@@ -17,6 +17,7 @@ router.patch("/resetPassword/:token", resetPassword);
 
 //get me
 router.get('/getMe', protect, getMe)
+router.delete('/deleteMe', protect, deleteMe)
 //get orders
 //get favourits
 // add cart

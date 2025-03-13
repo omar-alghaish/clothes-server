@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { Order, IOrder } from "../models/orderModel";
 import asyncHandler from "../utils/catchAsyncError";
+import { Order, IOrder } from "../models/orderModel";
+import { User, IUser } from "../models/userModel";
 import { AppError } from "../utils/appError";
 import { Item } from "../models/itemModel"; 
 
@@ -9,7 +10,6 @@ export const createOrder = asyncHandler(
   
       const { items, shippingAddress, paymentMethod } = req.body;
       const userId = req.user?.id;
-
       // Calculate the total price
       let totalPrice = 0;
       for (const item of items) {
@@ -30,6 +30,14 @@ export const createOrder = asyncHandler(
         shippingAddress,
         paymentMethod,
       });
+
+      // Add the order to the user
+      const user = await User.findById(userId)
+      if(!user){
+        return next(new AppError('something went wrong', 400));
+      }
+      user.orders.push(order.id)
+      user.save()
   
       res.status(201).json({
         status: "success",

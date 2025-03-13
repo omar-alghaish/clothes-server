@@ -69,8 +69,53 @@ export const getAllItems = asyncHandler(
 
     res.status(200).json({
       status: "success",
+      results: items.length,
       data: {
         items,
+      },
+    });
+  }
+);
+
+export const getNewArrivals = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // Calculate the date 7 days ago
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+    // Fetch items created within the last 7 days
+    const newArrivals = await Item.find({
+      createdAt: { $gte: sevenDaysAgo }, 
+    }).sort({ createdAt: -1 }); 
+
+    if (newArrivals.length === 0) {
+      return next(new AppError("No new arrivals found", 404));
+    }
+
+    // Send the response
+    res.status(200).json({
+      status: "success",
+      results: newArrivals.length,
+      data: {
+        items: newArrivals,
+      },
+    });
+  }
+);
+
+export const getFeaturedItems = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+
+    const featuredItems = await Item.find({ featured: true }).sort({ createdAt: -1 });
+
+    if (featuredItems.length === 0) {
+      return next(new AppError("No featured items found", 404));
+    }
+
+    res.status(200).json({
+      status: "success",
+      results: featuredItems.length,
+      data: {
+        items: featuredItems,
       },
     });
   }

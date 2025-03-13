@@ -8,7 +8,9 @@ export interface IItem extends Document {
   price: number;
   imageCover: string;
   images: string[];
-  seller: mongoose.Types.ObjectId; // Reference to the User model
+  brand: mongoose.Schema.Types.ObjectId;
+  featured: boolean;
+  seller: mongoose.Types.ObjectId; 
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +25,15 @@ const itemSchema: Schema<IItem> = new Schema<IItem>(
     description: { type: String, required: true },
     sizes: { type: [String], required: true },
     price: { type: Number, required: true },
+    brand: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Brand",
+      required: [true, "Item brand is required"],
+    },
+    featured: {
+      type: Boolean,
+      default: false, // Default to false
+    },
     imageCover: {
       type: String,
       trim: true,
