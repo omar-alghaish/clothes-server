@@ -40,7 +40,7 @@ export const resizeItemImages = asyncHandler(
         .resize(800, 800) // Resize to 800x800 pixels
         .toFormat('jpeg')
         .jpeg({ quality: 90 })
-        .toFile(path.join(__dirname, '..', 'uploads', img.filename));
+        //.toFile(path.join(__dirname, '..', 'uploads', img.filename));
 
       req.body.img = img.filename;
     }
@@ -56,7 +56,7 @@ export const resizeItemImages = asyncHandler(
             .resize(800, 800) // Resize to 800x800 pixels
             .toFormat('jpeg')
             .jpeg({ quality: 90 })
-            .toFile(path.join(__dirname, '..', 'uploads', filename));
+            //.toFile(path.join(__dirname, '..', 'uploads', filename));
           req.body.images.push(filename);
         })
       );

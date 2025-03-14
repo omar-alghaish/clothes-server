@@ -34,7 +34,7 @@ export const resizeUserPhoto = asyncHandler(
       .resize(500, 500)
       .toFormat('jpeg')
       .jpeg({ quality: 90 })
-      .toFile(`${uploadsDir}/${req.file.filename}`);
+      //.toFile(`${uploadsDir}/${req.file.filename}`);
 
     next();
   }
