@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { Item } from "../models/itemModel";
-import { getAllItems } from "../controllers/itemController";
-import { createItem } from "../controllers/itemController";
+import { getAllItems, uploadItemImages, uploadItemImagesToCloudinary } from "../controllers/itemController";
+import { createItem, resizeItemImages} from "../controllers/itemController";
 import { updateItem } from "../controllers/itemController";
 import { deleteItem } from "../controllers/itemController";
 import { getOneItem } from "../controllers/itemController";
@@ -21,8 +21,25 @@ router.get("/my-items", protect, getSellerItems);
 router.get("/new-arrivals", getNewArrivals);
 router.get("/featured", getFeaturedItems);
 
-router.post("/", protect, restrictTo('seller'), createItem);
-router.patch("/:id", protect,  updateItem);
+router.post(
+    "/", 
+    protect, 
+    restrictTo('seller'), 
+    uploadItemImages,
+    resizeItemImages,
+    uploadItemImagesToCloudinary,
+    createItem
+);
+
+router.patch(
+    "/:id", 
+    protect,    
+    uploadItemImages,
+    resizeItemImages,
+    uploadItemImagesToCloudinary,
+    updateItem
+);
+
 router.delete("/:id", protect, deleteItem);
 
 // public endpoints

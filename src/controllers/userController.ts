@@ -21,10 +21,11 @@ export const uploadUserphoto = upload.single('photo');
 
 export const resizeUserPhoto = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {    
-
+    
     if(!req.file){
       return next()
     }
+
     req.file.filename = `user-${req.user?.id}-${Date.now()}.jpeg`;
 
     const uploadsDir = path.join(__dirname, "..", "uploads");
@@ -41,6 +42,7 @@ export const resizeUserPhoto = asyncHandler(
 export const uploadUserPhotoToCloudinary = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
 
+
     if(!req.file){
       return next()
     }
@@ -48,7 +50,7 @@ export const uploadUserPhotoToCloudinary = asyncHandler(
     const result = await cloudinary.uploader.upload(
       `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`,
       {
-        folder: 'uploads',
+        folder: 'uploads/users',
       }
     );
 
@@ -75,10 +77,10 @@ const filterObj = <T extends Record<string, any>>(
 
 export const updateMe = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
+
       const filedsToBeUpdated = filterObj(req.body, 'firstName', 'lastName', 'email', 'gender', 'phone')
       if(req.file) 
         filedsToBeUpdated.photo = req.file.filename
-      
       
       const updatedUser = await User.findByIdAndUpdate(req.user?.id, filedsToBeUpdated, {
         new: true,

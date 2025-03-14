@@ -206,6 +206,8 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
 export const restrictTo = (...roles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
     // Check if the user's role is included in the allowed roles
+    console.log('entered restricted to seller');
+    
     if (!req.user || !roles.includes(req.user.role)) {
       return next(
         new AppError('You do not have the permission to perform this action', 403)

@@ -7,53 +7,147 @@ import cloudinary from "../configs/cloudinaryConfig";
 import multer from "multer";
 import sharp from "sharp";
 import { log } from "util";
+import path from "path";
 
-const multerStorage = multer.memoryStorage()
+const multerStorage = multer.memoryStorage();
 
 function multerFilter(req: Request, file: Express.Multer.File, cb: Function) {
   if (file.mimetype.startsWith('image')) cb(null, true);
-  else cb(new AppError('not an image! please upload only images.', 400), false);
+  else cb(new AppError('Not an image! Please upload only images.', 400), false);
 }
+
 const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
 
-export const uploaditemImages = upload.fields([
-  { name: 'imageCover', maxCount: 1 },
-  { name: 'images', maxCount: 3 },
+// Middleware to upload item images
+export const uploadItemImages = upload.fields([
+  { name: 'img', maxCount: 1 }, // Single image for the main image field
+  { name: 'images', maxCount: 5 }, // Multiple images for the images field
 ]);
 
-export const resizeitemImages = asyncHandler(async (req, res, next) => {
-  // Ensure req.files exists and has the expected structure
-  if (!req.files || !('imageCover' in req.files) || !('images' in req.files)) {
-    return next();
-  }
+export const resizeItemImages = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
 
-  // 1) Cover image
-  req.body.imageCover = `item-${req.params.id}-${Date.now()}-cover.jpeg`;
-  await sharp(req.files.imageCover[0].buffer)
-    .resize(2000, 1333)
-    .toFormat('jpeg')
-    .jpeg({ quality: 90 })
-    .toFile(`uploads/img/items/${req.body.imageCover}`);
 
-  // 2) Images
-  req.body.images = [];
+    if (!req.files) return next();
 
-  await Promise.all(
-    req.files.images.map(async (file, i) => {
-      const filename = `item-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+    // Resize and format the main image (img)
+    if (files.img) {
+      const img = files.img[0]; 
+      img.filename = `item-${Date.now()}-main.jpeg`;
 
-      await sharp(file.buffer)
-        .resize(2000, 1333)
+      await sharp(img.buffer)
+        .resize(800, 800) // Resize to 800x800 pixels
         .toFormat('jpeg')
         .jpeg({ quality: 90 })
-        .toFile(`uploads/img/items/${filename}`);
+        .toFile(path.join(__dirname, '..', 'uploads', img.filename));
 
-      req.body.images.push(filename);
-    })
-  );
+      req.body.img = img.filename;
+    }
 
-  next();
-}); 
+    // Resize and format the additional images (images)
+    if (files.images) {
+      req.body.images = [];
+      await Promise.all(
+        files.images.map(async (file, index) => {
+          const filename = `item-${Date.now()}-${index + 1}.jpeg`;
+
+          await sharp(file.buffer)
+            .resize(800, 800) // Resize to 800x800 pixels
+            .toFormat('jpeg')
+            .jpeg({ quality: 90 })
+            .toFile(path.join(__dirname, '..', 'uploads', filename));
+          req.body.images.push(filename);
+        })
+      );
+    }
+    next();
+  }
+);
+
+export const uploadItemImagesToCloudinary = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.files) return next();
+
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+    // Upload the main image (img) to Cloudinary
+    if (files.img) {
+      const img = files.img[0];
+      const result = await cloudinary.uploader.upload(
+        `data:${img.mimetype};base64,${img.buffer.toString('base64')}`,
+        {
+          folder: 'uploads/items',
+        }
+      );
+      
+      req.body.img = result.secure_url;
+    }
+
+    // Upload the additional images (images) to Cloudinary
+    if (files.images) {
+      req.body.images = [];
+      await Promise.all(
+        files.images.map(async (file) => {
+          const result = await cloudinary.uploader.upload(
+            `data:${file.mimetype};base64,${file.buffer.toString('base64')}`,
+            {
+              folder: 'uploads/items',
+            }
+          );
+          req.body.images.push(result.secure_url);
+        })
+      );
+    }
+    next();
+  }
+);
+
+
+// function multerFilter(req: Request, file: Express.Multer.File, cb: Function) {
+//   if (file.mimetype.startsWith('image')) cb(null, true);
+//   else cb(new AppError('not an image! please upload only images.', 400), false);
+// }
+// const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
+
+// export const uploaditemImages = upload.fields([
+//   { name: 'imageCover', maxCount: 1 },
+//   { name: 'images', maxCount: 3 },
+// ]);
+
+// export const resizeitemImages = asyncHandler(async (req, res, next) => {
+//   // Ensure req.files exists and has the expected structure
+//   if (!req.files || !('imageCover' in req.files) || !('images' in req.files)) {
+//     return next();
+//   }
+
+//   // 1) Cover image
+//   req.body.imageCover = `item-${req.params.id}-${Date.now()}-cover.jpeg`;
+//   await sharp(req.files.imageCover[0].buffer)
+//     .resize(2000, 1333)
+//     .toFormat('jpeg')
+//     .jpeg({ quality: 90 })
+//     .toFile(`uploads/img/items/${req.body.imageCover}`);
+
+//   // 2) Images
+//   req.body.images = [];
+
+//   await Promise.all(
+//     req.files.images.map(async (file, i) => {
+//       const filename = `item-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
+
+//       await sharp(file.buffer)
+//         .resize(2000, 1333)
+//         .toFormat('jpeg')
+//         .jpeg({ quality: 90 })
+//         .toFile(`uploads/img/items/${filename}`);
+
+//       req.body.images.push(filename);
+//     })
+//   );
+
+//   next();
+// }); 
 
 
 export const getAllItems = asyncHandler(
@@ -177,25 +271,17 @@ export const getOneItem = asyncHandler(
 export const createItem = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {  
     // Extract the item details from the request body
-    const { name, description, sizes, price, images } = req.body;
+    // const { name, description, sizes, price, images } = req.body;
 
-    // Extract the seller ID from the authenticated user
-    const sellerId = (req.user as IUser)._id; // Assuming req.user is populated by the authentication middleware
-
-    // Create the new item with the seller ID
-    const newItem = await Item.create({
-      name,
-      description,
-      sizes,
-      price,
-      images,
-      seller: sellerId, // Add the seller ID to the item
-    });
+    req.body.seller = req.user?.id;
     
-    await Item.create(newItem);
+    const newItem = await Item.create(req.body);
+    
     res.status(201).json({
       status: "success",
-      message: "item was added successfully!",
+      data: {
+        newItem
+      }
     });
   }
 );
