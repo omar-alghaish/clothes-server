@@ -1,11 +1,17 @@
 import { Router } from "express";
-import { protect, signUp, signIn, forgotPassword, resetPassword} from "./../controllers/authController";
+import { protect, signUp, signIn, forgotPassword, resetPassword, uploadBrandLogo, resizeBrandLogo, uploadBrandLogoToCloudinary} from "./../controllers/authController";
 import { uploadUserphoto, resizeUserPhoto,uploadUserPhotoToCloudinary, updateMe, getMe, deleteMe } from "./../controllers/userController";
 
 const router = Router();
 
 // To be moved to 'auth routes' file
-router.post("/register", signUp);
+router.post(
+    "/register",
+    uploadBrandLogo, 
+    resizeBrandLogo, 
+    uploadBrandLogoToCloudinary, 
+    signUp,
+)
 router.post("/login", signIn);
 
 //To be implemented

@@ -4,8 +4,11 @@ import { Brand, IBrand } from "../models/brandModel";
 import { Item } from "../models/itemModel"; 
 import asyncHandler from "../utils/catchAsyncError";
 import { AppError } from "../utils/appError";
-
 import jwt from "jsonwebtoken";
+import multer from 'multer';
+import path from "path";
+import sharp from 'sharp'
+import cloudinary from "../configs/cloudinaryConfig";
 
 const signToken = (id: string): string => {
   return jwt.sign({ id }, process.env.JWT_SECRET as string, {
@@ -45,6 +48,55 @@ const createSendToken = (user: IUser, status: number, res: Response, brand?: IBr
   });
 };
 
+// Middleware to upload brand logo
+
+const multerStorage = multer.memoryStorage()
+
+function multerFilter(req: Request, file: Express.Multer.File, cb: Function) {
+  if (file.mimetype.startsWith('image')) cb(null, true);
+  else cb(new AppError('not an image! please upload only images.', 400), false);
+}
+
+const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
+
+export const uploadBrandLogo = upload.single('brandLogo');
+
+export const resizeBrandLogo = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.file) return next();
+
+    // Resize and format the brand logo
+    req.file.filename = `brand-${Date.now()}-logo.jpeg`;
+
+    await sharp(req.file.buffer)
+      .resize(500, 500) // Resize to 500x500 pixels (adjust as needed)
+      .toFormat('jpeg')
+      .jpeg({ quality: 90 })
+      //.toFile(path.join(__dirname, '..', 'uploads', req.file.filename)); // Uncomment if saving locally
+
+    req.body.brandLogo = req.file.filename; // Save the filename for Cloudinary upload
+    next();
+  }
+);
+
+export const uploadBrandLogoToCloudinary = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.file) return next();
+
+    // Upload the brand logo to Cloudinary
+    const result = await cloudinary.uploader.upload(
+      `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`,
+      {
+        folder: 'uploads/brands', // Folder in Cloudinary
+      }
+    );
+
+    req.body.brandLogo = result.secure_url; // Save the Cloudinary URL
+    next();
+  }
+);
+
+
 export const signUp = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     // const {firstName, lastName, email, password} = req.body
@@ -55,6 +107,9 @@ export const signUp = asyncHandler(
     // if(!firstName || !lastName ||!email || !password){
     //   return next(new AppError('All fields are required!', 400));
     // }
+    console.log(req.body);
+    
+
     if(!email) 
       return next(new AppError('email is required!', 400));
     if(!firstName)
@@ -90,7 +145,7 @@ export const signUp = asyncHandler(
       newUser.brand = brand.id
       newUser.save()
     }
-
+    
     createSendToken(newUser, 201, res, brand);
   }
 );
