@@ -56,20 +56,56 @@ export const resizeitemImages = asyncHandler(async (req, res, next) => {
 }); 
 
 
-
 export const getAllItems = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    console.log('hello');
-    
-    const items = await Item.find();
-    console.log(items)
-    if (items.length === 0) {
-      return next(new AppError("No items found", 404));
+
+    const { page, category, gender, color, size, brand, price } = req.query;
+
+    const filter: any = {};
+ 
+    if (category) {
+      const [gender, itemCategory] = (category as string).split("-");
+      filter.category = itemCategory;
+      filter.gender = gender; 
     }
+
+    if (color) {
+      filter.colors = { $in: (color as string).split(",") };
+    }
+
+    if (size) {
+      filter.sizes = { $in: (size as string).split(",") }; 
+    }
+
+    if (brand) {
+      filter.brand = { $in: (brand as string).split(",") };
+    }
+
+    if (price) {
+      const [minPrice, maxPrice] = (price as string).split("-");
+      filter.price = {};
+      if (minPrice) filter.price.$gte = parseFloat(minPrice);
+      if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
+    }
+
+    // Pagination
+    const limit = 10; 
+    const skip = (parseInt(page as string) - 1) * limit;
+
+    // Fetch items
+    const items = await Item.find(filter)
+      .skip(skip)
+      .limit(limit);
+
+    // Count total items for pagination
+    const totalItems = await Item.countDocuments(filter);
 
     res.status(200).json({
       status: "success",
       results: items.length,
+      totalItems,
+      totalPages: Math.ceil(totalItems / limit),
+      currentPage: parseInt(page as string),
       data: {
         items,
       },
