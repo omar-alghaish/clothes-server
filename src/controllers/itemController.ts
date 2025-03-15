@@ -156,25 +156,33 @@ export const getAllItems = asyncHandler(
     const { page, category, gender, color, size, brand, price } = req.query;
 
     const filter: any = {};
- 
+
+    // Handle category and gender
     if (category) {
       const [gender, itemCategory] = (category as string).split("-");
       filter.category = itemCategory;
-      filter.gender = gender; 
+      filter.gender = gender;
     }
 
+    // Handle color (expecting multiple color parameters: color=red&color=blue)
     if (color) {
-      filter.colors = { $in: (color as string).split(",") };
+      const colors = Array.isArray(color) ? color : [color]; // Convert to array if not already
+      filter.colors = { $in: colors };
     }
 
+    // Handle size (expecting multiple size parameters: size=S&size=M)
     if (size) {
-      filter.sizes = { $in: (size as string).split(",") }; 
+      const sizes = Array.isArray(size) ? size : [size]; // Convert to array if not already
+      filter.sizes = { $in: sizes };
     }
 
+    // Handle brand (expecting multiple brand parameters: brand=Nike&brand=Adidas)
     if (brand) {
-      filter.brand = { $in: (brand as string).split(",") };
+      const brands = Array.isArray(brand) ? brand : [brand]; // Convert to array if not already
+      filter.brand = { $in: brands };
     }
 
+    // Handle price range (e.g., price=10-50)
     if (price) {
       const [minPrice, maxPrice] = (price as string).split("-");
       filter.price = {};
@@ -183,7 +191,7 @@ export const getAllItems = asyncHandler(
     }
 
     // Pagination
-    const limit = 10; 
+    const limit = 10;
     const skip = (parseInt(page as string) - 1) * limit;
 
     // Fetch items
