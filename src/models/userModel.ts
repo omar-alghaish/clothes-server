@@ -15,7 +15,7 @@ export interface IUser extends Document {
   password: string;
   passwordConfirm: string | undefined;
   role: "user" | "seller" | "admin"; 
-  photo?: string;
+  avatarFile?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -38,8 +38,8 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
     },
     email: {
       type: String,
+      //unique: true,
       required: [true, "Email is required"],
-      unique: true,
       lowercase: true,
       trim: true,
       match: [/\S+@\S+\.\S+/, "Please use a valid email address"],
@@ -78,9 +78,9 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
       enum: ["user", "seller", "admin"],
       default: "user",
     },
-    photo: {
+    avatarFile: {
       type: String,
-      default: "photo.jpg"
+      default: "avatarFile.jpg"
     },
     brand: {
       type: mongoose.Schema.Types.ObjectId,

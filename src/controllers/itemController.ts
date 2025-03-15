@@ -8,6 +8,7 @@ import multer from "multer";
 import sharp from "sharp";
 import { log } from "util";
 import path from "path";
+import { Brand } from "../models/brandModel";
 
 const multerStorage = multer.memoryStorage();
 
@@ -56,7 +57,7 @@ export const resizeItemImages = asyncHandler(
             .resize(800, 800) // Resize to 800x800 pixels
             .toFormat('jpeg')
             .jpeg({ quality: 90 })
-            .toFile(path.join(__dirname, '..', 'uploads', filename));
+            //.toFile(path.join(__dirname, '..', 'uploads', filename));
           req.body.images.push(filename);
         })
       );
@@ -157,37 +158,79 @@ export const getAllItems = asyncHandler(
 
     const filter: any = {};
 
-    // Handle category and gender
+    // Handle category and gender 
     if (category) {
-      const [gender, itemCategory] = (category as string).split("-");
-      filter.category = itemCategory;
-      filter.gender = gender;
+      const categories = Array.isArray(category) ? category : [category]; 
+
+      // Initialize arrays to store genders and item categories
+      const genders: string[] = [];
+      const itemCategories: string[] = [];
+
+      // Process each category value
+      categories.forEach((cat) => {
+        const [gender, itemCategory] = (cat as string).split("-");
+        if (gender && itemCategory) {
+          genders.push(gender);
+          itemCategories.push(itemCategory);
+        }
+      });
+
+      // Add filters for gender and category
+      if (genders.length > 0) {
+        filter.gender = { $in: genders }; 
+      }
+      if (itemCategories.length > 0) {
+        filter.category = { $in: itemCategories }; 
+      }
     }
 
-    // Handle color (expecting multiple color parameters: color=red&color=blue)
+    // Handle color 
     if (color) {
-      const colors = Array.isArray(color) ? color : [color]; // Convert to array if not already
+      const colors = Array.isArray(color) ? color : [color]; 
       filter.colors = { $in: colors };
     }
 
-    // Handle size (expecting multiple size parameters: size=S&size=M)
+    // Handle size
     if (size) {
-      const sizes = Array.isArray(size) ? size : [size]; // Convert to array if not already
+      const sizes = Array.isArray(size) ? size : [size]; 
       filter.sizes = { $in: sizes };
     }
 
-    // Handle brand (expecting multiple brand parameters: brand=Nike&brand=Adidas)
+    // Handle brand 
     if (brand) {
-      const brands = Array.isArray(brand) ? brand : [brand]; // Convert to array if not already
-      filter.brand = { $in: brands };
-    }
+    const brandNames = Array.isArray(brand) ? brand : [brand]; 
 
-    // Handle price range (e.g., price=10-50)
+    // Fetch the brand IDs corresponding to the brand names
+    const brands = await Brand.find({ brandName: { $in: brandNames } }).select('_id');
+    
+    if (brands.length > 0) {
+    // Extract the brand IDs
+    const brandIds = brands.map((b) => b._id);
+
+    // Filter items by brand IDs
+    filter.brand = { $in: brandIds };
+    } else {
+        // If no brands are found, return an empty result
+        filter.brand = { $in: [] }; 
+      }
+  }
+
+    // Handle price range 
+    // if (price) {
+    //   const [minPrice, maxPrice] = (price as string).split("-");
+    //   filter.price = {};
+    //   if (minPrice) filter.price.$gte = parseFloat(minPrice);
+    //   if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
+    // }
+
     if (price) {
-      const [minPrice, maxPrice] = (price as string).split("-");
-      filter.price = {};
-      if (minPrice) filter.price.$gte = parseFloat(minPrice);
-      if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
+      const prices = Array.isArray(price) ? price : [price]; // Convert to array if not already
+    
+      // Parse prices to numbers
+      const parsedPrices = prices.map((p) => parseFloat(p as string));
+    
+      // Filter items that match any of the provided prices
+      filter.price = { $in: parsedPrices };
     }
 
     // Pagination
@@ -282,6 +325,7 @@ export const createItem = asyncHandler(
     // const { name, description, sizes, price, images } = req.body;
 
     req.body.seller = req.user?.id;
+    req.body.brand = req.user?.brand
     
     const newItem = await Item.create(req.body);
     

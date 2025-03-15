@@ -25,7 +25,7 @@ const brandSchema: Schema<IBrand> = new Schema<IBrand>(
       type: String,
       required: [true, "Brand name is required"],
       trim: true,
-      unique: true,
+      //unique: true,
     },
     brandDescription: {
       type: String,
@@ -68,7 +68,7 @@ const brandSchema: Schema<IBrand> = new Schema<IBrand>(
       type: String,
       required: [true, "Tax ID is required"],
       trim: true,
-      unique: true,
+      //unique: true,
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,

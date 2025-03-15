@@ -107,9 +107,7 @@ export const signUp = asyncHandler(
     // if(!firstName || !lastName ||!email || !password){
     //   return next(new AppError('All fields are required!', 400));
     // }
-    console.log(req.body);
     
-
     if(!email) 
       return next(new AppError('email is required!', 400));
     if(!firstName)
@@ -118,9 +116,6 @@ export const signUp = asyncHandler(
       return next(new AppError('lastName is required!', 400));
     if(!password)
       return next(new AppError('password is required!', 400));
-
-
-
 
     if (role === "seller" && (!brandName || !brandDescription || !brandStyle || !brandLogo ||
       !primaryColor || !businessAddress || !phoneNumber || !website || !taxId)) {
@@ -134,16 +129,18 @@ export const signUp = asyncHandler(
       firstName, lastName, email, password, passwordConfirm, role
     });
 
-    
-    let brand;
+    let brand;    
     if(role === "seller"){
         brand = await Brand.create({
         brandName, brandDescription, brandStyle, brandLogo, primaryColor, businessAddress, phoneNumber,
         website, taxId, user: newUser.id
       })
-      //add the brand id to the user object (newUser.brand)
+      //add the brand id to the user object (newUser.brand)      
       newUser.brand = brand.id
-      newUser.save()
+      //console.log(newUser.brand);
+      console.log(newUser);
+      
+      newUser.save({ validateBeforeSave: false })
     }
     
     createSendToken(newUser, 201, res, brand);
@@ -176,7 +173,7 @@ export const signIn = asyncHandler(
         firsName: existingUser.firstName,
         lastName: existingUser.lastName,
         email: existingUser.email,
-        photo: existingUser.photo,
+        avatarFile: existingUser.avatarFile,
         role: existingUser.role,
         brand: existingUser.brand
       }
@@ -186,7 +183,7 @@ export const signIn = asyncHandler(
         firsName: existingUser.firstName,
         lastName: existingUser.lastName,
         email: existingUser.email,
-        photo: existingUser.photo,
+        avatarFile: existingUser.avatarFile,
         role: existingUser.role
       }  
     }

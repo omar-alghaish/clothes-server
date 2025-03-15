@@ -17,7 +17,7 @@ function multerFilter(req: Request, file: Express.Multer.File, cb: Function) {
 
 const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
 
-export const uploadUserphoto = upload.single('photo');
+export const uploadUserphoto = upload.single('avatarFile');
 
 export const resizeUserPhoto = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {    
@@ -78,14 +78,14 @@ const filterObj = <T extends Record<string, any>>(
 export const updateMe = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
 
-      const filedsToBeUpdated = filterObj(req.body, 'firstName', 'lastName', 'email', 'gender', 'phone')
+      const filedsToBeUpdated = filterObj(req.body, 'firstName', 'lastName', 'email', 'gender', 'avatarFile')
       if(req.file) 
-        filedsToBeUpdated.photo = req.file.filename
+        filedsToBeUpdated.avatarFile = req.file.filename      
       
       const updatedUser = await User.findByIdAndUpdate(req.user?.id, filedsToBeUpdated, {
         new: true,
         runValidators: true,
-      }).select("-password -passwordConfirm")
+      }).select("-password -passwordConfirm")      
       
       res.status(200).json({
         status: 'success',
