@@ -193,7 +193,7 @@ export const getAllItems = asyncHandler(
     // Handle size
     if (size) {
       const sizes = Array.isArray(size) ? size : [size]; 
-      filter.sizes = { $in: sizes };
+      filter.sizes = { $in: sizes };      
     }
 
     // Handle brand 
@@ -215,32 +215,28 @@ export const getAllItems = asyncHandler(
       }
   }
 
-    // Handle price range 
-    // if (price) {
-    //   const [minPrice, maxPrice] = (price as string).split("-");
-    //   filter.price = {};
-    //   if (minPrice) filter.price.$gte = parseFloat(minPrice);
-    //   if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
-    // }
-
+    //Handle price range 
     if (price) {
-      const prices = Array.isArray(price) ? price : [price]; // Convert to array if not already
-    
-      // Parse prices to numbers
-      const parsedPrices = prices.map((p) => parseFloat(p as string));
-    
-      // Filter items that match any of the provided prices
-      filter.price = { $in: parsedPrices };
+      const [minPrice, maxPrice] = (price as string).split("-");
+      filter.price = {};
+      if (minPrice) filter.price.$gte = parseFloat(minPrice);
+      if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
     }
 
     // Pagination
     const limit = 10;
     const skip = (parseInt(page as string) - 1) * limit;
 
-    // Fetch items
+    // Fetch items and populate the brand field
+    console.log('filter: ', filter);
+    
     const items = await Item.find(filter)
       .skip(skip)
-      .limit(limit);
+      .limit(limit)
+      .populate({
+        path: 'brand', // Field to populate
+        select: 'brandName brandLogo', // Fields to include from the Brand collection
+      });    
 
     // Count total items for pagination
     const totalItems = await Item.countDocuments(filter);
@@ -326,8 +322,17 @@ export const createItem = asyncHandler(
 
     req.body.seller = req.user?.id;
     req.body.brand = req.user?.brand
+    let { sizes, colors } = req.body;
     
-    const newItem = await Item.create(req.body);
+    if (typeof sizes === "string") {
+      sizes = JSON.parse(sizes);
+    }
+    if (typeof colors === "string") {
+      colors = JSON.parse(colors);
+    }
+
+    const newItem = new Item({ ...req.body, sizes, colors});
+    await newItem.save();
     
     res.status(201).json({
       status: "success",

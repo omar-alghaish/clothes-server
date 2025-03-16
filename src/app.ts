@@ -7,6 +7,7 @@ import itemRouter from "./routes/itemRoutes";
 import userRouter from './routes/userRoutes'
 import cartRouter from './routes/cartRoutes'
 import ordertRouter from './routes/orderRoutes'
+import reviewRouter from './routes/reviewRoutes'
 
 export const app = express();
 
@@ -26,6 +27,7 @@ app.use("/api/v1/items", itemRouter);
 app.use('/api/v1/users', userRouter)
 app.use('/api/v1/cart', cartRouter)
 app.use('/api/v1/orders', ordertRouter)
+app.use('/api/v1/reviews', reviewRouter)
 
 // testing api
 app.get("/test", (req: Request, res: Response, next: NextFunction) => {

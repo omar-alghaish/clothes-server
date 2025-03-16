@@ -16,6 +16,8 @@ export interface IItem extends Document {
   brand: mongoose.Schema.Types.ObjectId;
   featured: boolean;
   seller: mongoose.Types.ObjectId; 
+  material: string; 
+  countryOfOrigin: string; 
   createdAt: Date;
   updatedAt: Date;
 }
@@ -79,6 +81,14 @@ const itemSchema: Schema<IItem> = new Schema<IItem>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Brand",
       // required: [true, "Item brand is required"],
+    },
+    material: {
+      type: String,
+      //required: true, 
+    },
+    countryOfOrigin: {
+      type: String,
+      //required: true, 
     },
     featured: {
       type: Boolean,

@@ -2,16 +2,20 @@ import mongoose, { Document, Schema } from "mongoose";
 
 // Define the CartItem interface
 export interface ICartItem {
-  product: mongoose.Types.ObjectId; // Reference to the Product model
+  product: mongoose.Types.ObjectId; 
+  brand: mongoose.Schema.Types.ObjectId;
   quantity: number;
   price: number; // Price at the time of adding to cart (to handle price changes)
+  size: string;
+  color: string;
+  img: string;
 }
 
 // Define the Cart interface
 export interface ICart extends Document {
-  user: mongoose.Types.ObjectId; // Reference to the User model
-  items: ICartItem[]; // Array of cart items
-  totalPrice: number; // Total price of all items in the cart
+  user: mongoose.Types.ObjectId;
+  items: ICartItem[]; 
+  totalPrice: number; 
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,13 +27,18 @@ const cartSchema: Schema<ICart> = new Schema<ICart>(
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
-      unique: true, // Each user can have only one cart
+      unique: true, 
     },
     items: [
       {
         product: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Product",
+          ref: "Item",
+          required: true,
+        },
+        brand: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Brand",
           required: true,
         },
         quantity: {
@@ -41,6 +50,18 @@ const cartSchema: Schema<ICart> = new Schema<ICart>(
           type: Number,
           required: true,
         },
+        size: {
+          type: String,
+          required: true,
+        },
+        color: {
+          type: String,
+          required: true,
+        },
+        img: {
+          type: String,
+          required: true,
+        },
       },
     ],
     totalPrice: {
@@ -49,7 +70,7 @@ const cartSchema: Schema<ICart> = new Schema<ICart>(
       default: 0,
     },
   },
-  { timestamps: true } // Automatically add createdAt and updatedAt fields
+  { timestamps: true } 
 );
 
 
