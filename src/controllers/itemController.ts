@@ -300,7 +300,10 @@ export const getFeaturedItems = asyncHandler(
 
 export const getOneItem = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const item = await Item.findById(req.params.id);
+    const item = await Item.findById(req.params.id).populate({
+      path: 'brand', 
+      select: 'brandName brandLogo', 
+    });    
 
     if (!item) {
       return next(new AppError("No item found", 404));
