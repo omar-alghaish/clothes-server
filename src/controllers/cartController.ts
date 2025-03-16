@@ -81,7 +81,7 @@ export const getCart = asyncHandler(
         })
         .populate({
           path: 'items.brand',
-          select: 'brandName', 
+          select: 'brandName brandLogo', 
         });
   
       if (!cart) {
