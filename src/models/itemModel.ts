@@ -61,7 +61,7 @@ const itemSchema: Schema<IItem> = new Schema<IItem>(
   
     gender: {
       type: String,
-      enum: ["male", "female"],
+      enum: ["male", "female", "neutral"],
       default: "male",
     },
     category: {

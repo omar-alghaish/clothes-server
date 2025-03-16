@@ -63,6 +63,7 @@ export const uploadBrandLogo = upload.single('brandLogo');
 
 export const resizeBrandLogo = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
+    
     if (!req.file) return next();
 
     // Resize and format the brand logo
@@ -100,9 +101,11 @@ export const uploadBrandLogoToCloudinary = asyncHandler(
 export const signUp = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     // const {firstName, lastName, email, password} = req.body
+  
     
     const { firstName, lastName, email, password, passwordConfirm, role, brandName, brandDescription, brandStyle, brandLogo,
       primaryColor, businessAddress, phoneNumber, website, taxId } = req.body;
+      
 
     // if(!firstName || !lastName ||!email || !password){
     //   return next(new AppError('All fields are required!', 400));
@@ -137,9 +140,7 @@ export const signUp = asyncHandler(
       })
       //add the brand id to the user object (newUser.brand)      
       newUser.brand = brand.id
-      //console.log(newUser.brand);
-      console.log(newUser);
-      
+      //console.log(newUser.brand);      
       newUser.save({ validateBeforeSave: false })
     }
     

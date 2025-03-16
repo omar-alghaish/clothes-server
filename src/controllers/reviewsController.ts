@@ -51,4 +51,26 @@ export const getItemReviews = asyncHandler(
     }
   );
 
+  export const getAllReviews = asyncHandler(
+    async (req: Request, res: Response, next: NextFunction) => {
+      // Fetch all reviews and populate the user and item fields
+      const reviews = await Review.find()
+        .populate({
+          path: 'user',
+          select: 'firstName lastName', 
+        })
+        .populate({
+          path: 'item',
+          select: 'name img',
+        });
+  
+      res.status(200).json({
+        status: "success",
+        results: reviews.length,
+        data: {
+          reviews,
+        },
+      });
+    }
+  );
  
