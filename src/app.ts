@@ -8,6 +8,8 @@ import userRouter from './routes/userRoutes'
 import cartRouter from './routes/cartRoutes'
 import ordertRouter from './routes/orderRoutes'
 import reviewRouter from './routes/reviewRoutes'
+import addressRouter from './routes/addressRoutes'
+import paymentRouter from './routes/paymentCardRoutes'
 
 export const app = express();
 
@@ -28,6 +30,8 @@ app.use('/api/v1/users', userRouter)
 app.use('/api/v1/cart', cartRouter)
 app.use('/api/v1/orders', ordertRouter)
 app.use('/api/v1/reviews', reviewRouter)
+app.use('/api/v1/addresses', addressRouter)
+app.use('/api/v1/payment-cards', paymentRouter)
 
 // testing api
 app.get("/test", (req: Request, res: Response, next: NextFunction) => {

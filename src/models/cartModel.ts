@@ -2,10 +2,10 @@ import mongoose, { Document, Schema } from "mongoose";
 
 // Define the CartItem interface
 export interface ICartItem {
-  product: mongoose.Types.ObjectId; 
+  product: mongoose.Schema.Types.ObjectId
   brand: mongoose.Schema.Types.ObjectId;
   quantity: number;
-  price: number; // Price at the time of adding to cart (to handle price changes)
+  price: number; 
   size: string;
   color: string;
   img: string;

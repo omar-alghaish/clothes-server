@@ -2,21 +2,24 @@ import mongoose, { Document, Schema } from "mongoose";
 
 // Define the OrderItem interface
 export interface IOrderItem {
-  product: mongoose.Types.ObjectId; // Reference to the Product model
-  quantity: number; // Quantity of the product ordered
-  price: number; // Price of the product at the time of ordering
+  product: mongoose.Types.ObjectId;
+  quantity: number; 
+  price: number;
 }
 
 // Define the Order interface
 export interface IOrder extends Document {
-  user: mongoose.Types.ObjectId; // Reference to the User model
-  items: IOrderItem[]; // Array of ordered items
-  totalPrice: number; // Total price of the order
-  status: string; // Order status (e.g., pending, shipped, delivered)
-  shippingAddress: string; // Shipping address for the order
-  paymentMethod: string; // Payment method (e.g., credit card, PayPal)
-  createdAt: Date; // Timestamp when the order was created
-  updatedAt: Date; // Timestamp when the order was last updated
+  user: mongoose.Types.ObjectId; 
+  items: IOrderItem[];
+  shipping: number;
+  tax: number; 
+  subTotal: number;
+  totalPrice: number;
+  status: string; 
+  shippingAddress: mongoose.Types.ObjectId;  
+  paymentMethod: mongoose.Types.ObjectId; 
+  createdAt: Date; 
+  updatedAt: Date; 
 }
 
 // Define the Order schema
@@ -45,6 +48,21 @@ const orderSchema: Schema<IOrder> = new Schema<IOrder>(
         },
       },
     ],
+    shipping: {
+      type: Number,
+      required: [true, "Shipping cost is required."],
+      default: 0, 
+    },
+    tax: {
+      type: Number,
+      required: [true, "Tax amount is required."],
+      default: 0, 
+    },
+    subTotal: {
+      type: Number,
+      required: [true, "Subtotal is required."],
+      default: 0, 
+    },
     totalPrice: {
       type: Number,
       required: [true, "An order must have a total price."],
@@ -55,15 +73,17 @@ const orderSchema: Schema<IOrder> = new Schema<IOrder>(
       default: "pending", // Default status is "pending"
     },
     shippingAddress: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Address", 
       required: [true, "An order must have a shipping address."],
     },
     paymentMethod: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "PaymentCard", // Reference to the Payment model
       required: [true, "An order must have a payment method."],
     },
   },
-  { timestamps: true } // Automatically add createdAt and updatedAt fields
+  { timestamps: true } 
 );
 
 // Export the Order model

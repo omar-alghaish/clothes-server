@@ -38,7 +38,7 @@ export const resizeItemImages = asyncHandler(
       img.filename = `item-${Date.now()}-main.jpeg`;
 
       await sharp(img.buffer)
-        .resize(800, 800) // Resize to 800x800 pixels
+        .resize(800, 800) 
         .toFormat('jpeg')
         .jpeg({ quality: 90 })
         //.toFile(path.join(__dirname, '..', 'uploads', img.filename));
