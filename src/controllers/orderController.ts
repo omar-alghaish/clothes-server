@@ -10,15 +10,21 @@ import { Cart } from "../models/cartModel";
 
 export const createOrder = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { items, addressId, paymentId, paymentData } = req.body;
+    const { addressId, paymentId, paymentData } = req.body;
     const userId = req.user?.id;
 
     // Validate required fields
-    if (!addressId || !items || items.length === 0) {
-      return next(new AppError("Address ID and at least one item are required.", 400));
+    if (!addressId) {
+      return next(new AppError("Address ID is required.", 400));
     }
-    if (!paymentId && !paymentData) {
-      return next(new AppError("Payment ID or Payment Data is required.", 400));
+    if (!paymentId) {
+      return next(new AppError("Payment ID is required.", 400));
+    }
+
+    // Fetch the user's cart
+    const cart = await Cart.findOne({ user: userId }).populate("items.product");
+    if (!cart || cart.items.length === 0) {
+      return next(new AppError("Your cart is empty.", 400));
     }
 
     // Fetch the address
@@ -29,34 +35,42 @@ export const createOrder = asyncHandler(
 
     // Calculate the subTotal (sum of all items' prices)
     let subTotal = 0;
-    for (const item of items) {
+    for (const item of cart.items) {
       subTotal += item.quantity * item.price;
     }
 
     // Calculate shipping and tax as a fixed percentage of the subTotal
-    const shipping = subTotal * 0.05; // 5% of subTotal
-    const tax = subTotal * 0.07; // 7% of subTotal
+    const shipping = subTotal * 0.05; 
+    const tax = subTotal * 0.07; 
 
     // Calculate the totalPrice (subTotal + shipping + tax)
     const totalPrice = subTotal + shipping + tax;
 
-    // Fetch payment data if paymentId is provided
-    let payment;
-    if (paymentId) {
-      payment = await PaymentCard.findById(paymentId);
+    // Handle payment data
+    let paymentMethodId;
+    
+      const payment = await PaymentCard.findById(paymentId);
       if (!payment) {
         return next(new AppError("Payment not found.", 404));
       }
-    } else {
-      // Use the provided paymentData
-      payment = paymentData;
-    }
-    
+      paymentMethodId = paymentId;
+
+    //  else {
+    //    Create a new PaymentCard document if paymentData is provided
+    //   const newPaymentCard = await PaymentCard.create({
+    //     user: userId,
+    //     cardHolderName: paymentData.cardHolderName,
+    //     cardNumber: paymentData.cardNumber,
+    //     expirationDate: paymentData.expirationDate,
+    //     cvv: paymentData.cvv,
+    //   });
+    //   paymentMethodId = newPaymentCard._id; // Use the newly created PaymentCard's ID
+    // }
 
     // Create the order
     const order = await Order.create({
       user: userId,
-      items: items.map((item: IOrderItem) => ({
+      items: cart.items.map((item) => ({
         product: item.product,
         quantity: item.quantity,
         price: item.price,
@@ -65,20 +79,16 @@ export const createOrder = asyncHandler(
       tax,
       subTotal,
       totalPrice,
-      shippingAddress: address,
-      paymentMethod: payment,
+      shippingAddress: addressId, 
+      paymentMethod: paymentMethodId, 
     });
 
-    // If a cartId is provided, clear the cart after the order is created
-    // if (req.body.cartId) {
-    //   const cart = await Cart.findById(req.body.cartId);
-    //   if (cart) {
-    //     cart.items = [];
-    //     cart.totalPrice = 0;
-    //     await cart.save();
-    //   }
-    // }
+    // Clear the cart
+    cart.items = []; 
+    cart.totalPrice = 0;
+    await cart.save();
 
+    // Send the response
     res.status(201).json({
       status: "success",
       data: {
@@ -88,6 +98,15 @@ export const createOrder = asyncHandler(
   }
 );
 
+// If a cartId is provided, clear the cart after the order is created
+// if (req.body.cartId) {
+//   const cart = await Cart.findById(req.body.cartId);
+//   if (cart) {
+//     cart.items = [];
+//     cart.totalPrice = 0;
+//     await cart.save();
+//   }
+// }
 export const getMyOrders = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
         
