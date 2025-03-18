@@ -5,6 +5,23 @@ import asyncHandler from "../utils/catchAsyncError";
 import { AppError } from "../utils/appError";
 import { User } from "../models/userModel";
 
+export const getAddresses = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?.id; // Get the authenticated user's ID
+
+    // Fetch all addresses for the user
+    const addresses = await Address.find({ user: userId });
+
+    // Send the response
+    res.status(200).json({
+      status: "success",
+      data: {
+        addresses,
+      },
+    });
+  }
+);
+
 export const createAddress = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const {
@@ -71,3 +88,5 @@ export const createAddress = asyncHandler(
     });
   }
 );
+
+
