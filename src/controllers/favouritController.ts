@@ -14,7 +14,7 @@ export const getAllFavorites = asyncHandler(
 
     const user = await User.findById(userId).populate({
       path: "favourits",
-      select: "name description price imageCover sizes images",
+      select: "name description price imageCover sizes img images",
     });
 
     if (!user) {
