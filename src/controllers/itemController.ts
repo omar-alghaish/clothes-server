@@ -158,30 +158,16 @@ export const getAllItems = asyncHandler(
 
     const filter: any = {};
 
-    // Handle category and gender 
+    // Handle gender 
+    if (gender) {
+      const genders = Array.isArray(gender) ? gender : [gender];
+      filter.gender = { $in: genders };
+    }
+
+    // Handle category 
     if (category) {
-      const categories = Array.isArray(category) ? category : [category]; 
-
-      // Initialize arrays to store genders and item categories
-      const genders: string[] = [];
-      const itemCategories: string[] = [];
-
-      // Process each category value
-      categories.forEach((cat) => {
-        const [gender, itemCategory] = (cat as string).split("-");
-        if (gender && itemCategory) {
-          genders.push(gender);
-          itemCategories.push(itemCategory);
-        }
-      });
-
-      // Add filters for gender and category
-      if (genders.length > 0) {
-        filter.gender = { $in: genders }; 
-      }
-      if (itemCategories.length > 0) {
-        filter.category = { $in: itemCategories }; 
-      }
+      const categories = Array.isArray(category) ? category : [category];
+      filter.category = { $in: categories };
     }
 
     // Handle color 
@@ -228,7 +214,6 @@ export const getAllItems = asyncHandler(
     const skip = (parseInt(page as string) - 1) * limit;
 
     // Fetch items and populate the brand field
-    console.log('filter: ', filter);
     
     const items = await Item.find(filter)
       .skip(skip)
