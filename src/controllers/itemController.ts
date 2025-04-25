@@ -158,52 +158,81 @@ export const getAllItems = asyncHandler(
 
     const filter: any = {};
 
-    // Handle gender 
-    if (gender) {
-      const genders = Array.isArray(gender) ? gender : [gender];
-      filter.gender = { $in: genders };
+    // Initialize arrays to potentially store genders and item categories
+    let genders: string[] = [];
+    let itemCategories: string[] = [];
+
+    // Handle combined category-gender format (e.g., "men-shirts")
+    if (category) {
+      const categories = Array.isArray(category) ? category : [category]; 
+
+      // Process each category value
+      categories.forEach((cat) => {
+        const catString = String(cat); // Convert to string
+        if (catString.includes("-")) {
+          // This is a combined value like "men-shirts"
+          const [gender, itemCategory] = catString.split("-");
+          if (gender && itemCategory) {
+            genders.push(gender);
+            itemCategories.push(itemCategory);
+          }
+        } else {
+          // This is just a regular category value
+          itemCategories.push(catString);
+        }
+      });
+
+      // Add filter for category
+      if (itemCategories.length > 0) {
+        filter.category = { $in: itemCategories }; 
+      }
     }
 
-    // Handle category 
-    if (category) {
-      const categories = Array.isArray(category) ? category : [category];
-      filter.category = { $in: categories };
+    // Handle separate gender parameter - merge with any genders parsed from category
+    if (gender) {
+      const genderValues = Array.isArray(gender) ? gender.map(String) : [String(gender)];
+      genders = [...new Set([...genders, ...genderValues])]; // Deduplicate
+    }
+    
+    // Add gender filter if we have any gender values
+    if (genders.length > 0) {
+      filter.gender = { $in: genders };
     }
 
     // Handle color 
     if (color) {
-      const colors = Array.isArray(color) ? color : [color]; 
+      const colors = Array.isArray(color) ? color.map(String) : [String(color)]; 
       filter.colors = { $in: colors };
     }
 
     // Handle size
     if (size) {
-      const sizes = Array.isArray(size) ? size : [size]; 
+      const sizes = Array.isArray(size) ? size.map(String) : [String(size)]; 
       filter.sizes = { $in: sizes };      
     }
 
     // Handle brand 
     if (brand) {
-    const brandNames = Array.isArray(brand) ? brand : [brand]; 
+      const brandNames = Array.isArray(brand) ? brand.map(String) : [String(brand)]; 
 
-    // Fetch the brand IDs corresponding to the brand names
-    const brands = await Brand.find({ brandName: { $in: brandNames } }).select('_id');
-    
-    if (brands.length > 0) {
-    // Extract the brand IDs
-    const brandIds = brands.map((b) => b._id);
+      // Fetch the brand IDs corresponding to the brand names
+      const brands = await Brand.find({ brandName: { $in: brandNames } }).select('_id');
+      
+      if (brands.length > 0) {
+        // Extract the brand IDs
+        const brandIds = brands.map((b) => b._id);
 
-    // Filter items by brand IDs
-    filter.brand = { $in: brandIds };
-    } else {
+        // Filter items by brand IDs
+        filter.brand = { $in: brandIds };
+      } else {
         // If no brands are found, return an empty result
         filter.brand = { $in: [] }; 
       }
-  }
+    }
 
     //Handle price range 
     if (price) {
-      const [minPrice, maxPrice] = (price as string).split("-");
+      const [minPrice, maxPrice] = String(price).split("-");
       filter.price = {};
       if (minPrice) filter.price.$gte = parseFloat(minPrice);
       if (maxPrice) filter.price.$lte = parseFloat(maxPrice);
@@ -211,7 +240,8 @@ export const getAllItems = asyncHandler(
 
     // Pagination
     const limit = 10;
-    const skip = (parseInt(page as string) - 1) * limit;
+    const pageNum = page ? parseInt(String(page)) : 1;
+    const skip = (pageNum - 1) * limit;
 
     // Fetch items and populate the brand field
     
@@ -231,7 +261,7 @@ export const getAllItems = asyncHandler(
       results: items.length,
       totalItems,
       totalPages: Math.ceil(totalItems / limit),
-      currentPage: parseInt(page as string),
+      currentPage: pageNum,
       data: {
         items,
       },
