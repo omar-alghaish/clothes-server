@@ -89,4 +89,78 @@ export const createAddress = asyncHandler(
   }
 );
 
+export const updateAddress = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?._id;
+    const addressId = req.params.id;
 
+    if (!mongoose.Types.ObjectId.isValid(addressId)) {
+      return next(new AppError("Invalid address ID", 400));
+    }
+
+    // Check if address exists and belongs to the user
+    const address = await Address.findOne({
+      _id: addressId,
+      user: userId
+    });
+
+    if (!address) {
+      return next(new AppError("Address not found or you don't have permission to update it", 404));
+    }
+
+    // Filter out fields that shouldn't be updated
+    const filteredBody = { ...req.body };
+    const forbiddenUpdates = ['user', '_id', 'createdAt', 'updatedAt'];
+    forbiddenUpdates.forEach(field => delete filteredBody[field]);
+
+    // Update the address
+    const updatedAddress = await Address.findByIdAndUpdate(
+      addressId,
+      filteredBody,
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      status: "success",
+      data: { address: updatedAddress }
+    });
+  }
+);
+
+/**
+ * Delete an address
+ */
+export const deleteAddress = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?._id;
+    const addressId = req.params.id;
+
+    if (!mongoose.Types.ObjectId.isValid(addressId)) {
+      return next(new AppError("Invalid address ID", 400));
+    }
+
+    // Check if address exists and belongs to the user
+    const address = await Address.findOne({
+      _id: addressId,
+      user: userId
+    });
+
+    if (!address) {
+      return next(new AppError("Address not found or you don't have permission to delete it", 404));
+    }
+
+    // Delete address
+    await Address.findByIdAndDelete(addressId);
+
+    // Remove address from user's addresses array
+    await User.findByIdAndUpdate(
+      userId,
+      { $pull: { addresses: addressId } }
+    );
+
+    res.status(204).json({
+      status: "success",
+      data: null
+    });
+  }
+);
