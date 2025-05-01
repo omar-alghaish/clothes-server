@@ -53,7 +53,6 @@ export const createAddress = asyncHandler(
     }
 
 
-
     // Create the new address
     const newAddress = await Address.create({
       firstName,
@@ -67,7 +66,7 @@ export const createAddress = asyncHandler(
       zipCode,
       user: userId, 
     });
-
+    
     const user = await User.findByIdAndUpdate(
         userId,
         { $push: { addresses: newAddress._id } }, 

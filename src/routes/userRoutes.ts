@@ -14,21 +14,11 @@ router.post(
 )
 router.post("/login", signIn);
 
-//To be implemented
-router.post("/forgotPassword", forgotPassword);
-router.patch("/resetPassword/:token", resetPassword);
-
-
-//user routes
 
 //get me
 router.get('/getMe', protect, getMe)
 router.delete('/deleteMe', protect, deleteMe)
-//get orders
-//get favourits
-// add cart
-//add favourits
-//add address
+
 
 router.patch("/updateMe",protect,  uploadUserphoto, resizeUserPhoto, uploadUserPhotoToCloudinary, updateMe);
 

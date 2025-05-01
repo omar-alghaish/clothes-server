@@ -30,3 +30,24 @@ export const createPaymentCard = asyncHandler(
     });
   }
 );
+
+export const getPaymentCards = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?._id; 
+
+    const paymentCards = await PaymentCard.find({user: userId})
+
+    if(paymentCards.length < 1 ){
+      return next(new AppError('no payment cards found', 404));
+    }
+
+    res.status(201).json({
+      status: 'success',
+      results: paymentCards.length,
+      data: {
+        paymentCards,
+      },
+    });
+  }
+);
+

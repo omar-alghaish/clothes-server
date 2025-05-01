@@ -24,6 +24,7 @@ const addressSchema: Schema<IAddress> = new Schema<IAddress>(
         type: String,
         lowercase: true,
         trim: true,
+        index: false,
         match: [/\S+@\S+\.\S+/, "Please use a valid email address"],
     },
     country: { type: String, required: true },
@@ -41,6 +42,5 @@ const addressSchema: Schema<IAddress> = new Schema<IAddress>(
     timestamps: true,
 }
 );
-
 
 export const Address = mongoose.model<IAddress>("Address", addressSchema);
