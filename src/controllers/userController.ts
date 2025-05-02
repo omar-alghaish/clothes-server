@@ -78,7 +78,7 @@ const filterObj = <T extends Record<string, any>>(
 export const updateMe = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
 
-      const filedsToBeUpdated = filterObj(req.body, 'firstName', 'lastName', 'email', 'gender', 'avatarFile')
+      const filedsToBeUpdated = filterObj(req.body, 'firstName', 'lastName', 'email', 'gender', 'phone', 'avatarFile')
       if(req.file) 
         filedsToBeUpdated.avatarFile = req.file.filename      
       
