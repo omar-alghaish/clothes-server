@@ -55,17 +55,9 @@ export const createOrder = asyncHandler(
       }
       paymentMethodId = paymentId;
 
-    //  else {
-    //    Create a new PaymentCard document if paymentData is provided
-    //   const newPaymentCard = await PaymentCard.create({
-    //     user: userId,
-    //     cardHolderName: paymentData.cardHolderName,
-    //     cardNumber: paymentData.cardNumber,
-    //     expirationDate: paymentData.expirationDate,
-    //     cvv: paymentData.cvv,
-    //   });
-    //   paymentMethodId = newPaymentCard._id; // Use the newly created PaymentCard's ID
-    // }
+    // Calculate estimated delivery date (3 days from now)
+    const estimatedDate = new Date();
+    estimatedDate.setDate(estimatedDate.getDate() + 3);
 
     // Create the order
     const order = await Order.create({
@@ -74,6 +66,9 @@ export const createOrder = asyncHandler(
         product: item.product,
         quantity: item.quantity,
         price: item.price,
+        size: item.size,
+        color: item.color,
+        brand: item.brand
       })),
       shipping,
       tax,
@@ -81,6 +76,7 @@ export const createOrder = asyncHandler(
       totalPrice,
       shippingAddress: addressId, 
       paymentMethod: paymentMethodId, 
+      estimatedDate
     });
 
     // Clear the cart
@@ -98,15 +94,6 @@ export const createOrder = asyncHandler(
   }
 );
 
-// If a cartId is provided, clear the cart after the order is created
-// if (req.body.cartId) {
-//   const cart = await Cart.findById(req.body.cartId);
-//   if (cart) {
-//     cart.items = [];
-//     cart.totalPrice = 0;
-//     await cart.save();
-//   }
-// }
 export const getMyOrders = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
         

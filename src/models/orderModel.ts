@@ -3,8 +3,11 @@ import mongoose, { Document, Schema } from "mongoose";
 // Define the OrderItem interface
 export interface IOrderItem {
   product: mongoose.Types.ObjectId;
+  brand: mongoose.Schema.Types.ObjectId;
   quantity: number; 
   price: number;
+  size: string;
+  color: string;
 }
 
 // Define the Order interface
@@ -18,6 +21,7 @@ export interface IOrder extends Document {
   status: string; 
   shippingAddress: mongoose.Types.ObjectId;  
   paymentMethod: mongoose.Types.ObjectId; 
+  estimatedDate: Date;
   createdAt: Date; 
   updatedAt: Date; 
 }
@@ -27,15 +31,20 @@ const orderSchema: Schema<IOrder> = new Schema<IOrder>(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // Reference to the User model
+      ref: "User",
       required: [true, "An order must belong to a user."],
     },
     items: [
       {
         product: {
           type: mongoose.Schema.Types.ObjectId,
-          ref: "Product", // Reference to the Product model
+          ref: "Product",
           required: [true, "An order item must reference a product."],
+        },
+        brand: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "Brand",
+          required: true,
         },
         quantity: {
           type: Number,
@@ -45,6 +54,14 @@ const orderSchema: Schema<IOrder> = new Schema<IOrder>(
         price: {
           type: Number,
           required: [true, "An order item must have a price."],
+        },
+        size: {
+          type: String,
+          required: true,
+        },
+        color: {
+          type: String,
+          required: true,
         },
       },
     ],
@@ -69,22 +86,35 @@ const orderSchema: Schema<IOrder> = new Schema<IOrder>(
     },
     status: {
       type: String,
-      enum: ["pending", "shipped", "delivered", "cancelled"], // Allowed order statuses
-      default: "pending", // Default status is "pending"
+      enum: ["pending", "shipped", "delivered", "cancelled"],
+      default: "pending",
     },
     shippingAddress: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Address", 
+      ref: "Address",
       required: [true, "An order must have a shipping address."],
     },
     paymentMethod: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "PaymentCard", // Reference to the Payment model
+      ref: "PaymentCard",
       required: [true, "An order must have a payment method."],
     },
+    estimatedDate: {
+      type: Date,
+      required: true,
+    },
   },
-  { timestamps: true } 
+  { timestamps: true }
 );
+
+orderSchema.pre<IOrder>("save", function (next) {
+  if (!this.estimatedDate) {
+    const estimated = new Date(this.createdAt || Date.now());
+    estimated.setDate(estimated.getDate() + 3);
+    this.estimatedDate = estimated;
+  }
+  next();
+});
 
 // Export the Order model
 export const Order = mongoose.model<IOrder>("Order", orderSchema);
