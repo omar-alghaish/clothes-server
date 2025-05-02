@@ -11,6 +11,8 @@ import reviewRouter from './routes/reviewRoutes'
 import addressRouter from './routes/addressRoutes'
 import paymentRouter from './routes/paymentCardRoutes'
 import favouritRouter from './routes/favouritRoutes'
+import complaintRoutes from "./routes/complaintRoutes";
+
 
 export const app = express();
 
@@ -34,6 +36,7 @@ app.use('/api/v1/reviews', reviewRouter)
 app.use('/api/v1/addresses', addressRouter)
 app.use('/api/v1/payment-cards', paymentRouter)
 app.use('/api/v1/favorites', favouritRouter)
+app.use("/api/v1/complaints", complaintRoutes);
 
 
 // testing api
