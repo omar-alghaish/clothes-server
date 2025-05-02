@@ -1,6 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import { Order } from "./orderModel";
+import crypto from "crypto";
 
 // Interface for User Document
 export interface IUser extends Document {
@@ -18,7 +19,10 @@ export interface IUser extends Document {
   avatarFile?: string;
   createdAt: Date;
   updatedAt: Date;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
+  createPasswordResetToken(): string;
   brand?: mongoose.Schema.Types.ObjectId;
   active: boolean;
 }
@@ -90,6 +94,8 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
       type: Boolean,
       default: true, 
     },
+    passwordResetToken: String,
+    passwordResetExpires: Date,
   },
   {
     timestamps: true, 
@@ -118,5 +124,23 @@ userSchema.methods.comparePassword = async function (
   return bcrypt.compare(candidatePassword, this.password);
 };
 
+// Method to create password reset token
+userSchema.methods.createPasswordResetToken = function (): string {
+  // Generate a random token
+  const resetToken = crypto.randomBytes(32).toString('hex');
+  
+  // Hash the token and save it to the user document
+  this.passwordResetToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+    
+  // Set token expiration (10 minutes)
+  this.passwordResetExpires = new Date(Date.now() + 10 * 60 * 1000);
+  
+  // Return the unhashed token (to be sent via email)
+  return resetToken;
+};
+
 // Export the User model
-export const User = mongoose.model<IUser>("User", userSchema); 
+export const User = mongoose.model<IUser>("User", userSchema);

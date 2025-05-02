@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { protect, signUp, signIn, forgotPassword, resetPassword, uploadBrandLogo, resizeBrandLogo, uploadBrandLogoToCloudinary} from "./../controllers/authController";
+import { protect, signUp, signIn, forgotPassword, resetPassword, changePassword, uploadBrandLogo, resizeBrandLogo, uploadBrandLogoToCloudinary} from "./../controllers/authController";
 import { uploadUserphoto, resizeUserPhoto,uploadUserPhotoToCloudinary, updateMe, getMe, deleteMe } from "./../controllers/userController";
 
 const router = Router();
@@ -13,6 +13,10 @@ router.post(
     signUp,
 )
 router.post("/login", signIn);
+
+// Password reset routes 
+
+router.patch('/changePassword', protect, changePassword);
 
 
 //get me

@@ -9,6 +9,8 @@ import multer from 'multer';
 import path from "path";
 import sharp from 'sharp'
 import cloudinary from "../configs/cloudinaryConfig";
+import crypto from 'crypto';
+import { sendEmail } from '../utils/email';
 
 const signToken = (id: string): string => {
   return jwt.sign({ id }, process.env.JWT_SECRET as string, {
@@ -200,13 +202,120 @@ export const signIn = asyncHandler(
   }
 );
 
+export const changePassword = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // 1) Get user from collection
+    const user = await User.findById(req.user?.id).select('+password');
+    
+    if (!user) {
+      return next(new AppError('User not found', 404));
+    }
+
+    // 2) Check if POSTed current password is correct
+    const { currentPassword, newPassword, newPasswordConfirm } = req.body;
+    
+
+    if (!currentPassword || !newPassword || !newPasswordConfirm) {
+      return next(
+        new AppError('Please provide current password, new password and password confirmation', 400)
+      );
+    }
+
+    // Verify current password
+    const isPasswordCorrect = await user.comparePassword(currentPassword);
+    if (!isPasswordCorrect) {
+      return next(new AppError('Your current password is incorrect', 401));
+    }
+
+    // 3) Check if new password and confirmation match
+    if (newPassword !== newPasswordConfirm) {
+      return next(new AppError('New password and confirmation do not match', 400));
+    }
+
+    // 4) If so, update password
+    user.password = newPassword;
+    user.passwordConfirm = newPasswordConfirm;
+    await user.save();
+    // Password will be hashed by the pre-save middleware
+
+    // 5) Log user in, send JWT
+    createSendToken(user, 200, res);
+  }
+);
+
+
 
 export const forgotPassword = asyncHandler(
-  async (req: Request, res: Response, next: Function) => {}
+  async (req: Request, res: Response, next: NextFunction) => {
+    // 1) Get user based on POSTed email
+    const user = await User.findOne({ email: req.body.email });
+    if (!user) {
+      return next(new AppError('There is no user with that email address.', 404));
+    }
+
+    // 2) Generate the random reset token
+    const resetToken = user.createPasswordResetToken();
+    await user.save({ validateBeforeSave: false });
+
+    // 3) Send it to user's email
+    // For production environment, replace the URL with your actual frontend URL
+    const resetURL = `${req.protocol}://${req.get('host')}/api/v1/users/resetPassword/${resetToken}`;
+
+    const message = `Forgot your password? Submit a PATCH request with your new password and passwordConfirm to: ${resetURL}.\nIf you didn't forget your password, please ignore this email!`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: 'Your password reset token (valid for 10 min)',
+        message
+      });
+
+      res.status(200).json({
+        status: 'success',
+        message: 'Token sent to email!'
+      });
+    } catch (err) {
+      user.passwordResetToken = undefined;
+      user.passwordResetExpires = undefined;
+      await user.save({ validateBeforeSave: false });
+
+      return next(
+        new AppError('There was an error sending the email. Try again later!', 500)
+      );
+    }
+  }
 );
 
 export const resetPassword = asyncHandler(
-  async (req: Request, res: Response, next: Function) => {}
+  async (req: Request, res: Response, next: NextFunction) => {
+    // 1) Get user based on the token
+    const hashedToken = crypto
+      .createHash('sha256')
+      .update(req.params.token)
+      .digest('hex');
+
+    const user = await User.findOne({
+      passwordResetToken: hashedToken,
+      passwordResetExpires: { $gt: new Date() }
+    });
+
+    // 2) If token has not expired, and there is user, set the new password
+    if (!user) {
+      return next(new AppError('Token is invalid or has expired', 400));
+    }
+
+    // 3) Update password and remove reset token fields
+    user.password = req.body.password;
+    user.passwordConfirm = req.body.passwordConfirm;
+    user.passwordResetToken = undefined;
+    user.passwordResetExpires = undefined;
+    
+    // 4) Save the user - this will trigger the pre-save hook to hash the password
+    await user.save();
+
+    // 5) Log the user in, send JWT
+    createSendToken(user, 200, res);
+  }
 );
 
 
