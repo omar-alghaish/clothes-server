@@ -345,7 +345,7 @@ const verifyToken = (token: string, secret: string): Promise<DecodedToken> => {
   });
 };
 
-export const protect = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+export const protect = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {  
   // 1) Checking if the token exists
   
   let token: string | undefined = req.headers.authorization;
@@ -376,6 +376,7 @@ export const protect = asyncHandler(async (req: Request, res: Response, next: Ne
 });
 
 export const restrictTo = (...roles: string[]) => {
+  
   return (req: Request, res: Response, next: NextFunction) => {
     // Check if the user's role is included in the allowed roles
     

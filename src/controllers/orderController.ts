@@ -114,10 +114,8 @@ export const getMyOrders = asyncHandler(
 
 export const getOrder = asyncHandler(
     async (req: Request, res: Response, next: NextFunction) => {
-        
-        const userId = req.user?.id
         const orderId = req.params.id
-        const order = await Order.findOne({user: userId, _id: orderId})
+        const order = await Order.findOne({_id: orderId})
     
 
         if (!order)
@@ -129,4 +127,91 @@ export const getOrder = asyncHandler(
             data: order,
         });
     }
+);
+
+export const getSellerOrders = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const sellerId = req.user?.id;
+    
+    // Get the seller's brand ID
+    const seller = await User.findById(sellerId);
+    if (!seller || !seller.brand) {
+      return next(new AppError("Seller or brand not found", 404));
+    }
+    
+    const brandId = seller.brand;
+    
+    // Find orders containing items from this seller's brand
+    const orders = await Order.find({
+      "items.brand": brandId
+    }).populate([
+      { path: "user", select: "firstName lastName email" },
+      { path: "shippingAddress" },
+      { path: "items.product", model: "Item" }, 
+    ]);
+    
+    if (orders.length === 0) {
+      return next(new AppError("No orders found for your brand", 404));
+    }
+    
+    res.status(200).json({
+      status: "success",
+      results: orders.length,
+      data: {
+        orders
+      }
+    });
+  }
+);
+
+export const updateSellerOrder = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { orderId, status } = req.body;
+    const sellerId = req.user?.id;
+    
+    // Input validation
+    if (!orderId) {
+      return next(new AppError("Order ID is required", 400));
+    }
+    
+    if (!status || !['pending', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+      return next(new AppError("Valid status is required (pending, shipped, delivered, or cancelled)", 400));
+    }
+    
+    // Get the seller's brand ID
+    const seller = await User.findById(sellerId);
+    if (!seller || !seller.brand) {
+      return next(new AppError("Seller or brand not found", 404));
+    }
+    
+    const brandId = seller.brand;
+    
+    // Find the order
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return next(new AppError("Order not found", 404));
+    }
+    
+    // Check if the order contains items from this seller's brand
+    const hasBrandItems = order.items.some(item => 
+      item.brand && item.brand.toString() === brandId.toString()
+    );
+    
+    if (!hasBrandItems) {
+      return next(new AppError("This order doesn't contain items from your brand", 403));
+    }
+    
+    // Update the order status
+    order.status = status;
+    await order.save();
+    
+    // Send success response
+    res.status(200).json({
+      status: "success",
+      message: `Order status updated to ${status}`,
+      data: {
+        order
+      }
+    });
+  }
 );
