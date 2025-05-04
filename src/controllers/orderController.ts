@@ -84,49 +84,80 @@ export const createOrder = asyncHandler(
     cart.totalPrice = 0;
     await cart.save();
 
+    // Populate order with additional item and brand details before sending response
+    const populatedOrder = await Order.findById(order._id)
+      .populate({
+        path: "items.product",
+        model: "Item",
+        select: "name img"
+      })
+      .populate({
+        path: "items.brand",
+        model: "Brand",
+        select: "brandName brandLogo"
+      });
+
     // Send the response
     res.status(201).json({
       status: "success",
       data: {
-        order,
+        order: populatedOrder,
       },
     });
   }
 );
 
 export const getMyOrders = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-        
-        const userId = req.user?.id
-        
-        const orders = await Order.find({user: userId})
-
-        if (orders.length < 1){
-            return next(new AppError('No orders found', 404));
-        }
-
-        res.status(200).json({
-            status: "success",
-            data: orders,
+  async (req: Request, res: Response, next: NextFunction) => {
+      
+      const userId = req.user?.id
+      
+      const orders = await Order.find({user: userId})
+        .populate({
+          path: "items.product",
+          model: "Item",
+          select: "name img"
+        })
+        .populate({
+          path: "items.brand",
+          model: "Brand",
+          select: "brandName brandLogo"
         });
-    }
+
+      if (orders.length < 1){
+          return next(new AppError('No orders found', 404));
+      }
+
+      res.status(200).json({
+          status: "success",
+          data: orders,
+      });
+  }
 );
 
 export const getOrder = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-        const orderId = req.params.id
-        const order = await Order.findOne({_id: orderId})
-    
-
-        if (!order)
-            return next(new AppError('No orders found', 404));
-        
-
-        res.status(200).json({
-            status: "success",
-            data: order,
+  async (req: Request, res: Response, next: NextFunction) => {
+      const orderId = req.params.id
+      const order = await Order.findOne({_id: orderId})
+        .populate({
+          path: "items.product",
+          model: "Item",
+          select: "name img"
+        })
+        .populate({
+          path: "items.brand",
+          model: "Brand",
+          select: "brandName brandLogo"
         });
-    }
+  
+      if (!order)
+          return next(new AppError('No orders found', 404));
+
+      res.status(200).json({
+          status: "success",
+          data: order,
+      });
+  }
 );
 
 export const getSellerOrders = asyncHandler(
