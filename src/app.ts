@@ -11,7 +11,8 @@ import reviewRouter from './routes/reviewRoutes'
 import addressRouter from './routes/addressRoutes'
 import paymentRouter from './routes/paymentCardRoutes'
 import favouritRouter from './routes/favouritRoutes'
-import complaintRoutes from "./routes/complaintRoutes";
+import complaintRouter from "./routes/complaintRoutes";
+import brandRouter from "./routes/brandRoutes";
 
 
 export const app = express();
@@ -32,11 +33,12 @@ app.use("/api/v1/items", itemRouter);
 app.use('/api/v1/users', userRouter)
 app.use('/api/v1/cart', cartRouter)
 app.use('/api/v1/orders', ordertRouter)
+app.use('/api/v1/brands', brandRouter)
 app.use('/api/v1/reviews', reviewRouter)
 app.use('/api/v1/addresses', addressRouter)
 app.use('/api/v1/payment-cards', paymentRouter)
 app.use('/api/v1/favorites', favouritRouter)
-app.use("/api/v1/complaints", complaintRoutes);
+app.use("/api/v1/complaints", complaintRouter);
 
 
 // testing api
