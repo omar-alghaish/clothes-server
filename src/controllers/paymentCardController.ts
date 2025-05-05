@@ -51,3 +51,31 @@ export const getPaymentCards = asyncHandler(
   }
 );
 
+export const deletePayment = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const userId = req.user?._id;
+
+    // Find the payment card
+    const paymentCard = await PaymentCard.findById(id);
+
+    // Check if payment card exists
+    if (!paymentCard) {
+      return next(new AppError('Payment card not found', 404));
+    }
+
+    // Verify that the payment card belongs to the authenticated user
+    if (paymentCard.user.toString() !== userId?.toString()) {
+      return next(new AppError('You do not have permission to delete this payment card', 403));
+    }
+
+    // Delete the payment card
+    await PaymentCard.findByIdAndDelete(id);
+
+    // Return no content status
+    res.status(204).json({
+      status: 'success',
+      data: null
+    });
+  }
+);

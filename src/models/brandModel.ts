@@ -61,7 +61,6 @@ const brandSchema: Schema<IBrand> = new Schema<IBrand>(
     },
     website: {
       type: String,
-      required: [true, "Website is required"],
       trim: true,
     },
     taxId: {
