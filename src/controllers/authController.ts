@@ -108,11 +108,6 @@ export const signUp = asyncHandler(
     const { firstName, lastName, email, password, passwordConfirm, role, brandName, brandDescription, brandStyle, brandLogo,
       primaryColor, businessAddress, phoneNumber, website, taxId } = req.body;
       
-
-    // if(!firstName || !lastName ||!email || !password){
-    //   return next(new AppError('All fields are required!', 400));
-    // }
-    
     if(!email) 
       return next(new AppError('email is required!', 400));
     if(!firstName)
@@ -123,7 +118,7 @@ export const signUp = asyncHandler(
       return next(new AppError('password is required!', 400));
 
     if (role === "seller" && (!brandName || !brandDescription || !brandStyle || !brandLogo ||
-      !primaryColor || !businessAddress || !phoneNumber || !website || !taxId)) {
+      !primaryColor || !businessAddress || !phoneNumber || !taxId)) {
         return next(new AppError('Brand details are required for seller registration!', 400));
     }
     
