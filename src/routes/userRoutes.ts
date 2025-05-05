@@ -5,17 +5,15 @@ import { uploadUserphoto, resizeUserPhoto,uploadUserPhotoToCloudinary, updateMe,
 const router = Router();
 
 // To be moved to 'auth routes' file
-router.post(
-    "/register",
-    uploadBrandLogo, 
-    resizeBrandLogo, 
-    uploadBrandLogoToCloudinary, 
-    signUp,
-)
+router.post('/register', 
+    uploadBrandLogo,
+    resizeBrandLogo,
+    uploadBrandLogoToCloudinary,
+    signUp
+  );
 router.post("/login", signIn);
 
 // Password reset routes 
-
 router.patch('/changePassword', protect, changePassword);
 
 

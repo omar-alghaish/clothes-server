@@ -105,7 +105,7 @@ export const signUp = asyncHandler(
     // const {firstName, lastName, email, password} = req.body
   
     
-    const { firstName, lastName, email, password, passwordConfirm, role, brandName, brandDescription, brandStyle, brandLogo,
+    const { firstName, lastName, email, password, passwordConfirm, role, brandName, brandDescription, brandStyle,
       primaryColor, businessAddress, phoneNumber, website, taxId } = req.body;
       
     if(!email) 
@@ -117,7 +117,7 @@ export const signUp = asyncHandler(
     if(!password)
       return next(new AppError('password is required!', 400));
 
-    if (role === "seller" && (!brandName || !brandDescription || !brandStyle || !brandLogo ||
+    if (role === "seller" && (!brandName || !brandDescription || !brandStyle || !req.body.brandLogo ||
       !primaryColor || !businessAddress || !phoneNumber || !taxId)) {
         return next(new AppError('Brand details are required for seller registration!', 400));
     }
@@ -132,7 +132,7 @@ export const signUp = asyncHandler(
     let brand;    
     if(role === "seller"){
         brand = await Brand.create({
-        brandName, brandDescription, brandStyle, brandLogo, primaryColor, businessAddress, phoneNumber,
+        brandName, brandDescription, brandStyle, brandLogo: req.body.brandLogo, primaryColor, businessAddress, phoneNumber,
         website, taxId, user: newUser.id
       })
       //add the brand id to the user object (newUser.brand)      
