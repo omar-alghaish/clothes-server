@@ -154,7 +154,7 @@ export const uploadItemImagesToCloudinary = asyncHandler(
 export const getAllItems = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
 
-    const { page, category, gender, color, size, brand, price } = req.query;
+    const { page, category, categoryField, gender, color, size, brand, price } = req.query;
 
     const filter: any = {};
 
@@ -186,6 +186,12 @@ export const getAllItems = asyncHandler(
       if (itemCategories.length > 0) {
         filter.category = { $in: itemCategories }; 
       }
+
+      // Handle categoryField filter
+    if (categoryField) {
+      const categoryFields = Array.isArray(categoryField) ? categoryField.map(String) : [String(categoryField)];
+      filter.categoryField = { $in: categoryFields };
+    }
     }
 
     // Handle separate gender parameter - merge with any genders parsed from category
