@@ -22,6 +22,7 @@ export interface IOrder extends Document {
   shippingAddress: mongoose.Types.ObjectId;  
   paymentMethod: mongoose.Types.ObjectId; 
   estimatedDate: Date;
+  active: boolean;
   createdAt: Date; 
   updatedAt: Date; 
 }
@@ -103,6 +104,10 @@ const orderSchema: Schema<IOrder> = new Schema<IOrder>(
       type: Date,
       required: true,
     },
+    active: {
+      type: Boolean,
+      default: true
+    }
   },
   { timestamps: true }
 );

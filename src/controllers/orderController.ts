@@ -246,3 +246,77 @@ export const updateSellerOrder = asyncHandler(
     });
   }
 );
+
+
+// ADMIN ENDPOINTS
+
+// Get all orders (admin only)
+export const getAllOrders = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const orders = await Order.find()
+      .populate({
+        path: "user",
+        select: "firstName lastName email"
+      })
+      .populate({
+        path: "items.product",
+        model: "Item",
+        select: "name img"
+      })
+      .populate({
+        path: "items.brand",
+        model: "Brand",
+        select: "brandName brandLogo"
+      })
+      .populate("shippingAddress");
+    
+    res.status(200).json({
+      status: "success",
+      results: orders.length,
+      data: {
+        orders
+      }
+    });
+  }
+);
+
+// Update order active status (admin only)
+export const updateOrderActive = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const orderId = req.params.id;
+    
+    const order = await Order.findById(orderId);
+    if (!order) {
+      return next(new AppError("Order not found", 404));
+    }
+    
+    order.active = !order.active;
+    await order.save({ validateBeforeSave: false });
+    
+    res.status(200).json({
+      status: "success",
+      message: `Order active status updated to ${order.active}`,
+      data: {
+        order
+      }
+    });
+  }
+);
+
+// Delete order (admin only)
+export const deleteOrder = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const orderId = req.params.id;
+    
+    const deletedOrder = await Order.findByIdAndDelete(orderId);
+    
+    if (!deletedOrder) {
+      return next(new AppError("Order not found", 404));
+    }
+    
+    res.status(204).json({
+      status: "success",
+      data: null
+    });
+  }
+);

@@ -1,9 +1,16 @@
 import { Router } from "express";
-import { createOrder, getMyOrders, getOrder, getSellerOrders, updateSellerOrder } from "./../controllers/orderController";
+import { createOrder, deleteOrder, getAllOrders, getMyOrders, getOrder, getSellerOrders, updateOrderActive, updateSellerOrder } from "./../controllers/orderController";
 import { protect, restrictTo } from "../controllers/authController";
 
 
 const router = Router();
+
+// Admin routes
+router.get("/admin/all", protect, restrictTo("admin"), getAllOrders);
+router.patch("/admin/:id/active", protect, restrictTo("admin"), updateOrderActive);
+router.delete("/admin/:id", protect, restrictTo("admin"), deleteOrder);
+
+
 
 router.post("/", protect, createOrder);
 router.get('/my-orders', protect, getMyOrders)
