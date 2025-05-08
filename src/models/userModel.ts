@@ -42,11 +42,11 @@ const userSchema: Schema<IUser> = new Schema<IUser>(
     },
     email: {
       type: String,
-      //unique: true,
+      unique: true,
       required: [true, "Email is required"],
       lowercase: true,
       trim: true,
-      match: [/\S+@\S+\.\S+/, "Please use a valid email address"],
+      match: [/\S+@\S+\.\S+/, "Please use a valid email address"], 
     },
     phone:{
       type: String

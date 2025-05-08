@@ -7,6 +7,7 @@ import { Brand, IBrand } from "../models/brandModel";
 import multer from 'multer';
 import sharp from 'sharp';
 import cloudinary from "../configs/cloudinaryConfig";
+import { User } from "../models/userModel";
 
 // Setup multer storage and filter for brand logo uploads
 const multerStorage = multer.memoryStorage();
@@ -166,6 +167,127 @@ export const updateBrand = asyncHandler(
       data: {
         brand: updatedBrand
       }
+    });
+  }
+);
+
+
+/**
+ * Get all brands - Admin only
+ */
+export const getAllBrands = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // Get pagination parameters from query
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    const skip = (page - 1) * limit;
+
+    // Get filter parameters
+    const filter: any = {};
+    
+    // Filter by active status if provided
+    if (req.query.active !== undefined) {
+      filter.active = req.query.active === 'true';
+    }
+
+    // Find brands with filters and pagination
+    const brands = await Brand.find(filter)
+      .populate({
+        path: 'user',
+        select: 'firstName lastName email role'
+      })
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    // Count total brands matching the filter
+    const totalBrands = await Brand.countDocuments(filter);
+
+    res.status(200).json({
+      status: 'success',
+      results: brands.length,
+      totalBrands,
+      totalPages: Math.ceil(totalBrands / limit),
+      currentPage: page,
+      data: {
+        brands
+      }
+    });
+  }
+);
+
+
+/**
+ * Update brand active status - Admin only
+ */
+export const updateBrandActive = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const brandId = req.params.id;
+    
+    // Check if active status is provided
+    if (req.body.active === undefined) {
+      return next(new AppError("Active status is required", 400));
+    }
+    
+    // Ensure active is a boolean
+    const isActive = req.body.active === true || req.body.active === 'true';
+    
+    // Find and update the brand
+    const updatedBrand = await Brand.findByIdAndUpdate(
+      brandId,
+      { active: isActive },
+      {
+        new: true,
+        runValidators: true
+      }
+    ).populate({
+      path: 'user',
+      select: 'firstName lastName email role'
+    });
+    
+    // Check if brand exists
+    if (!updatedBrand) {
+      return next(new AppError("Brand not found", 404));
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        brand: updatedBrand
+      }
+    });
+  }
+);
+
+/**
+ * Delete brand - Admin only
+ */
+export const deleteBrand = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const brandId = req.params.id;
+    
+    // Find the brand first to get the user ID
+    const brand = await Brand.findById(brandId);
+    
+    // Check if brand exists
+    if (!brand) {
+      return next(new AppError("Brand not found", 404));
+    }
+    
+    // Delete the brand
+    await Brand.findByIdAndDelete(brandId);
+    
+    // Update the user's brand reference (set to null or remove)
+    if (brand.user) {
+      await User.findByIdAndUpdate(
+        brand.user,
+        { $unset: { brand: "" } }
+      );
+    }
+    
+    res.status(204).json({
+      status: 'success',
+      data: null
     });
   }
 );

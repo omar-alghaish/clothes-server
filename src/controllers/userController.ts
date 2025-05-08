@@ -126,3 +126,189 @@ export const deleteMe = asyncHandler(
     });
   }
 );
+
+
+/**
+ *  Admin endpoints
+**/
+
+/**
+ * Create a new user by admin
+ */
+export const createUserByAdmin = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // Extract and validate required fields
+    const { 
+      firstName, 
+      lastName, 
+      email, 
+      password, 
+      passwordConfirm, 
+      role = 'user', 
+      phone,
+      gender,
+    } = req.body;
+    
+    // Basic validation
+    if (!email) return next(new AppError('Email is required!', 400));
+    if (!firstName) return next(new AppError('First name is required!', 400));
+    if (!lastName) return next(new AppError('Last name is required!', 400));
+    if (!password) return next(new AppError('Password is required!', 400));
+    
+    // Validate password match
+    if (password !== passwordConfirm) {
+      return next(new AppError("Password and passwordConfirm do not match.", 400));
+    }
+    
+    // Validate role
+    if (role && !['user', 'seller', 'admin'].includes(role)) {
+      return next(new AppError("Invalid role. Must be 'user', 'seller', or 'admin'", 400));
+    }
+    
+    // Check if user with this email already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return next(new AppError('User with this email already exists', 400));
+    }
+    
+    const newUser = await User.create({
+      firstName,
+      lastName,
+      email,
+      password,
+      passwordConfirm,
+      role,
+      phone,
+      gender
+    });
+    
+    // Remove sensitive data from response
+    const userWithoutSensitiveData = await User.findById(newUser._id)
+      .select("-password -passwordConfirm -passwordResetToken -passwordResetExpires");
+    
+    res.status(201).json({
+      status: 'success',
+      data: {
+        user: userWithoutSensitiveData
+      }
+    });
+  }
+);
+
+
+export const getAllUsers = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // Get pagination parameters from query
+    const page = req.query.page ? parseInt(req.query.page as string) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string) : 10;
+    const skip = (page - 1) * limit;
+
+    // Get filter parameters
+    const filter: any = {};
+    
+    // Filter by role if provided
+    if (req.query.role && ['user', 'seller', 'admin'].includes(req.query.role as string)) {
+      filter.role = req.query.role;
+    }
+    
+    // Filter by active status if provided
+    if (req.query.active !== undefined) {
+      filter.active = req.query.active === 'true';
+    }
+
+    // Find users with filters, pagination and excluding sensitive data
+    const users = await User.find(filter)
+      .select("-password -passwordConfirm -passwordResetToken -passwordResetExpires")
+      .skip(skip)
+      .limit(limit)
+      .sort({ createdAt: -1 });
+
+    // Count total users matching the filter
+    const totalUsers = await User.countDocuments(filter);
+
+    res.status(200).json({
+      status: 'success',
+      results: users.length,
+      totalUsers,
+      totalPages: Math.ceil(totalUsers / limit),
+      currentPage: page,
+      data: {
+        users
+      }
+    });
+  }
+);
+
+/**
+ * Update user (active status or role) 
+ */
+export const updateUser = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.id;
+    
+    // Only allow updating active status or role
+    const allowedFields = ['active', 'role'];
+    const updateData: Record<string, any> = {};
+    
+    // Check for valid fields
+    for (const field of allowedFields) {
+      if (req.body[field] !== undefined) {
+        // Validate role if it's being updated
+        if (field === 'role' && !['user', 'seller', 'admin'].includes(req.body.role)) {
+          return next(new AppError("Invalid role. Must be 'user', 'seller', or 'admin'", 400));
+        }
+        
+        updateData[field] = req.body[field];
+      }
+    }
+    
+    // Check if there are any fields to update
+    if (Object.keys(updateData).length === 0) {
+      return next(new AppError("No valid fields provided for update", 400));
+    }
+    
+    // Find and update the user
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      {
+        new: true,
+        runValidators: true
+      }
+    ).select("-password -passwordConfirm -passwordResetToken -passwordResetExpires");
+    
+    // Check if user exists
+    if (!updatedUser) {
+      return next(new AppError("User not found", 404));
+    }
+    
+    res.status(200).json({
+      status: 'success',
+      data: {
+        user: updatedUser
+      }
+    });
+  }
+);
+
+/**
+ * Delete user (permanent deletion) 
+ */
+export const deleteUser = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.id;
+    
+    // Find and remove the user
+    const user = await User.findByIdAndDelete(userId);
+    
+    // Check if user exists
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+    
+    res.status(204).json({
+      status: 'success',
+      data: null
+    });
+  }
+);

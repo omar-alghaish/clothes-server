@@ -33,7 +33,7 @@ router.post(
 
 router.patch(
     "/:id", 
-    protect,    
+    protect, 
     uploadItemImages,
     resizeItemImages,
     uploadItemImagesToCloudinary,

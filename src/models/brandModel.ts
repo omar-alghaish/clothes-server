@@ -17,6 +17,7 @@ export interface IBrand extends Document {
   website: string;
   taxId: string;
   user: mongoose.Schema.Types.ObjectId; // Reference to the user who owns the brand
+  active: boolean;
 }
 
 const brandSchema: Schema<IBrand> = new Schema<IBrand>(
@@ -71,12 +72,16 @@ const brandSchema: Schema<IBrand> = new Schema<IBrand>(
     },
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // Reference to the User collection
+      ref: "User", 
       required: true,
     },
+    active: {
+      type: Boolean,
+      default: true, 
+    }
   },
   {
-    timestamps: true, // Automatically add createdAt and updatedAt fields
+    timestamps: true, 
   }
 );
 

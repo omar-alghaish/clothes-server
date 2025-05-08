@@ -1,12 +1,11 @@
 import { Router } from "express";
 import { protect, resizeBrandLogo, uploadBrandLogo, uploadBrandLogoToCloudinary } from "./../controllers/authController";
 import { restrictTo } from "./../controllers/authController";
-import { getBrand, getMyBrand, updateBrand } from "./../controllers/brandController";
+import { deleteBrand, getAllBrands, getBrand, getMyBrand, updateBrand, updateBrandActive } from "./../controllers/brandController";
 
 
 const router = Router();
 
-router.get("/", getBrand)
 router.get("/my-brand", protect, getMyBrand)
 router.patch("/:id", 
     protect,
@@ -15,5 +14,12 @@ router.patch("/:id",
     uploadBrandLogoToCloudinary, 
     updateBrand
 )
+
+//Admin routes
+
+router.get("/", protect, restrictTo('admin'), getAllBrands)
+router.patch("/:id/active", protect, restrictTo('admin'), updateBrandActive);
+router.delete("/:id", protect, restrictTo('admin'), deleteBrand)
+
 
 export default router;

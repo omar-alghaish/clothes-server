@@ -10,7 +10,7 @@ import { Cart } from "../models/cartModel";
 
 export const createOrder = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { addressId, paymentId, paymentData } = req.body;
+    const { addressId, paymentId } = req.body;
     const userId = req.user?.id;
 
     // Validate required fields
