@@ -130,6 +130,7 @@ export const getMyOrders = asyncHandler(
 
       res.status(200).json({
           status: "success",
+          results: orders.length,
           data: orders,
       });
   }
@@ -247,9 +248,43 @@ export const updateSellerOrder = asyncHandler(
   }
 );
 
+export const cancelOrder = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const orderId = req.params.id;
+    const userId = req.user?.id;
+    
+    const order = await Order.findById(orderId);
+    
+    if (!order) {
+      return next(new AppError("Order not found", 404));
+    }
+    
+    if (order.user.toString() !== userId?.toString()) {
+      return next(new AppError("You are not authorized to cancel this order", 403));
+    }
+    
+    if (order.status === "cancelled") {
+      return next(new AppError("This order is already cancelled", 400));
+    }
+    
+    if (order.status === "delivered") {
+      return next(new AppError("You cannot cancel an order that has been delivered", 400));
+    }
+    
+    order.status = "cancelled";
+    await order.save({ validateBeforeSave: false });
+    
+    res.status(200).json({
+      status: "success",
+      message: "Order has been cancelled successfully",
+      data: {
+        order
+      }
+    });
+  }
+);
 
 // ADMIN ENDPOINTS
-
 // Get all orders (admin only)
 export const getAllOrders = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {

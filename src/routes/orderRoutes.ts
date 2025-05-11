@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createOrder, deleteOrder, getAllOrders, getMyOrders, getOrder, getSellerOrders, updateOrderActive, updateSellerOrder } from "./../controllers/orderController";
+import { cancelOrder, createOrder, deleteOrder, getAllOrders, getMyOrders, getOrder, getSellerOrders, updateOrderActive, updateSellerOrder } from "./../controllers/orderController";
 import { protect, restrictTo } from "../controllers/authController";
 
 
@@ -17,6 +17,7 @@ router.get('/my-orders', protect, getMyOrders)
 router.get("/seller-orders", protect, restrictTo('seller'), getSellerOrders);
 router.patch("/seller-orders", protect, restrictTo('seller'), updateSellerOrder);
 router.get("/:id", protect, getOrder);
+router.patch("/:id/cancel", protect, cancelOrder);
 
 
 export default router;
