@@ -9,6 +9,7 @@ import sharp from "sharp";
 import { log } from "util";
 import path from "path";
 import { Brand } from "../models/brandModel";
+import { Category } from "../models/categoryModel";
 
 const multerStorage = multer.memoryStorage();
 
@@ -153,56 +154,84 @@ export const uploadItemImagesToCloudinary = asyncHandler(
 
 export const getAllItems = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-
     const { page, category, categoryField, gender, color, size, brand, price } = req.query;
 
     const filter: any = {};
 
-    // Initialize arrays to potentially store genders and item categories
-    let genders: string[] = [];
-    let itemCategories: string[] = [];
-
-    // Handle combined category-gender format (e.g., "men-shirts")
+    // Handle category filtering - updated for new Category model
     if (category) {
       const categories = Array.isArray(category) ? category : [category]; 
+      let categoryIds = [];
+      let genderFilter: string[] = [];
 
       // Process each category value
-      categories.forEach((cat) => {
-        const catString = String(cat); // Convert to string
+      for (const cat of categories) {
+        const catString = String(cat);
+        
         if (catString.includes("-")) {
-          // This is a combined value like "men-shirts"
-          const [gender, itemCategory] = catString.split("-");
-          if (gender && itemCategory) {
-            genders.push(gender);
-            itemCategories.push(itemCategory);
+          // Handle combined format like "men-shirts"
+          const [genderValue, categoryName] = catString.split("-");
+          if (genderValue) {
+            genderFilter.push(genderValue);
+          }
+          
+          if (categoryName) {
+            // Find categories by name
+            const foundCategories = await Category.find({ 
+              name: { $regex: new RegExp(`^${categoryName}$`, 'i') } 
+            });
+            categoryIds.push(...foundCategories.map(c => c._id));
           }
         } else {
-          // This is just a regular category value
-          itemCategories.push(catString);
+          // Handle direct category name or ID
+          try {
+            // First try to find by ID
+            const category = await Category.findById(catString);
+            if (category) {
+              categoryIds.push(category._id);
+            } else {
+              // If not an ID, find by name
+              const foundCategories = await Category.find({ 
+                name: { $regex: new RegExp(`^${catString}$`, 'i') } 
+              });
+              categoryIds.push(...foundCategories.map(c => c._id));
+            }
+          } catch (error) {
+            // If ID lookup fails, find by name
+            const foundCategories = await Category.find({ 
+              name: { $regex: new RegExp(`^${catString}$`, 'i') } 
+            });
+            categoryIds.push(...foundCategories.map(c => c._id));
+          }
         }
-      });
-
-      // Add filter for category
-      if (itemCategories.length > 0) {
-        filter.category = { $in: itemCategories }; 
       }
 
-      // Handle categoryField filter
+      // Add category filter if categories were found
+      if (categoryIds.length > 0) {
+        filter.category = { $in: categoryIds };
+      }
+      
+      // Add gender filter from category parameters
+      if (genderFilter.length > 0) {
+        filter.gender = { $in: genderFilter };
+      }
+    }
+
+    // Handle categoryField filter
     if (categoryField) {
       const categoryFields = Array.isArray(categoryField) ? categoryField.map(String) : [String(categoryField)];
       filter.categoryField = { $in: categoryFields };
     }
-    }
 
-    // Handle separate gender parameter - merge with any genders parsed from category
+    // Handle separate gender parameter
     if (gender) {
       const genderValues = Array.isArray(gender) ? gender.map(String) : [String(gender)];
-      genders = [...new Set([...genders, ...genderValues])]; // Deduplicate
-    }
-    
-    // Add gender filter if we have any gender values
-    if (genders.length > 0) {
-      filter.gender = { $in: genders };
+      // If we already have a gender filter, merge with any genders from category parameters
+      if (filter.gender) {
+        filter.gender.$in = [...new Set([...filter.gender.$in, ...genderValues])];
+      } else {
+        filter.gender = { $in: genderValues };
+      }
     }
 
     // Handle color 
@@ -249,15 +278,20 @@ export const getAllItems = asyncHandler(
     const pageNum = page ? parseInt(String(page)) : 1;
     const skip = (pageNum - 1) * limit;
 
-    // Fetch items and populate the brand field
-    
+    // Fetch items and populate the brand and category fields
     const items = await Item.find(filter)
       .skip(skip)
       .limit(limit)
-      .populate({
-        path: 'brand', // Field to populate
-        select: 'brandName brandLogo', // Fields to include from the Brand collection
-      });    
+      .populate([
+        {
+          path: 'brand',
+          select: 'brandName brandLogo'
+        },
+        {
+          path: 'category',
+          select: 'name parentCategory'
+        }
+      ]);
 
     // Count total items for pagination
     const totalItems = await Item.countDocuments(filter);
@@ -283,7 +317,18 @@ export const getNewArrivals = asyncHandler(
     // Fetch items created within the last 7 days
     const newArrivals = await Item.find({
       createdAt: { $gte: sevenDaysAgo }, 
-    }).sort({ createdAt: -1 }); 
+    })
+    .sort({ createdAt: -1 })
+    .populate([
+      {
+        path: 'brand',
+        select: 'brandName brandLogo'
+      },
+      {
+        path: 'category',
+        select: 'name parentCategory'
+      }
+    ]); 
 
     if (newArrivals.length === 0) {
       return next(new AppError("No new arrivals found", 404));
@@ -302,8 +347,18 @@ export const getNewArrivals = asyncHandler(
 
 export const getFeaturedItems = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-
-    const featuredItems = await Item.find({ featured: true }).sort({ createdAt: -1 });
+    const featuredItems = await Item.find({ featured: true })
+      .sort({ createdAt: -1 })
+      .populate([
+        {
+          path: 'brand',
+          select: 'brandName brandLogo'
+        },
+        {
+          path: 'category',
+          select: 'name parentCategory'
+        }
+      ]);
 
     if (featuredItems.length === 0) {
       return next(new AppError("No featured items found", 404));
@@ -321,10 +376,16 @@ export const getFeaturedItems = asyncHandler(
 
 export const getOneItem = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const item = await Item.findById(req.params.id).populate({
-      path: 'brand', 
-      select: 'brandName brandLogo', 
-    });    
+    const item = await Item.findById(req.params.id).populate([
+      {
+        path: 'brand',
+        select: 'brandName brandLogo'
+      },
+      {
+        path: 'category',
+        select: 'name parentCategory'
+      }
+    ]);
 
     if (!item) {
       return next(new AppError("No item found", 404));
@@ -341,12 +402,11 @@ export const getOneItem = asyncHandler(
 
 export const createItem = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {  
-    // Extract the item details from the request body
-    // const { name, description, sizes, price, images } = req.body;
-
+   
     req.body.seller = req.user?.id;
     req.body.brand = req.user?.brand
-    let { sizes, colors } = req.body;
+
+    let { sizes, colors, category } = req.body;
     
     if (typeof sizes === "string") {
       sizes = JSON.parse(sizes);
@@ -355,7 +415,14 @@ export const createItem = asyncHandler(
       colors = JSON.parse(colors);
     }
 
-    const newItem = new Item({ ...req.body, sizes, colors});
+    let itemCategory = await Category.findOne({ name: category });
+
+    if (!itemCategory) {
+      itemCategory = new Category({ name: category });
+      await itemCategory.save();
+    }
+
+    const newItem = new Item({ ...req.body, sizes, colors, category: itemCategory._id });
     await newItem.save();
     
     res.status(201).json({

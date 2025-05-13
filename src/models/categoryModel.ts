@@ -1,19 +1,13 @@
 import mongoose, { Document, Schema, Model } from "mongoose";
 
-// Interface for the Category document
 export interface ICategory extends Document {
   name: string;
   description: string;
-  parent: mongoose.Schema.Types.ObjectId | null;
-  image: string;
-  featured: boolean;
-  gender: "male" | "female" | "neutral";
+  parentCategory?: mongoose.Schema.Types.ObjectId;
+  isActive: boolean;
+  gender?: string;
   createdAt: Date;
   updatedAt: Date;
-}
-
-interface ICategoryModel extends Model<ICategory> {
-  createSlug(name: string): string;
 }
 
 const categorySchema: Schema<ICategory> = new Schema<ICategory>(
@@ -21,41 +15,33 @@ const categorySchema: Schema<ICategory> = new Schema<ICategory>(
     name: { 
       type: String, 
       required: [true, "Category name is required"],
-      trim: true,
-      unique: true
+      unique: true,
+      trim: true 
     },
     description: {
       type: String,
       trim: true
     },
-    parent: {
+    parentCategory: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Category",
-      default: null
+      ref: "Category"
     },
-    image: {
-      type: String,
-      trim: true
-    },
-    featured: {
+    isActive: {
       type: Boolean,
-      default: false
+      default: true
     },
     gender: {
       type: String,
-      enum: ["male", "female", "neutral"],
-      default: "male"
+      enum: ["male", "female", "neutral", null],
+      default: 'neutral'
     }
   },
-  { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } }
+  { timestamps: true }
 );
 
-// Virtual field for subcategories
-categorySchema.virtual('subcategories', {
-  ref: 'Category',
-  localField: '_id',
-  foreignField: 'parent'
-});
+// Create indexes for better query performance
+categorySchema.index({ name: 1 });
+categorySchema.index({ parentCategory: 1 });
 
 // Export the Category model
-export const Category = mongoose.model<ICategory, ICategoryModel>("Category", categorySchema);
+export const Category = mongoose.model<ICategory>("Category", categorySchema);

@@ -13,6 +13,7 @@ import paymentRouter from './routes/paymentCardRoutes'
 import favouritRouter from './routes/favouritRoutes'
 import complaintRouter from "./routes/complaintRoutes";
 import brandRouter from "./routes/brandRoutes";
+import categoryRouter from "./routes/categoryRoutes";
 
 
 export const app = express();
@@ -39,7 +40,8 @@ app.use('/api/v1/addresses', addressRouter)
 app.use('/api/v1/payment-cards', paymentRouter)
 app.use('/api/v1/favorites', favouritRouter)
 app.use("/api/v1/complaints", complaintRouter);
-
+app.use('/api/v1/categories', categoryRouter)
+app.use('/api/v1/brands', brandRouter)
 
 // testing api
 app.get("/test", (req: Request, res: Response, next: NextFunction) => {

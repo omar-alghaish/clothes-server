@@ -10,8 +10,7 @@ export interface IItem extends Document {
   images: string[];
   reviewCount: number;
   img: string;
-  category: string;
-  categoryField: string;
+  category: mongoose.Schema.Types.ObjectId;  categoryField: string;
   gender: "male" | "female" | "neutral"; 
   sizes: string[];
   brand: mongoose.Schema.Types.ObjectId;
@@ -66,7 +65,8 @@ const itemSchema: Schema<IItem> = new Schema<IItem>(
       default: "male",
     },
     category: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
       required: [true, "Item category is required"],
     },
     categoryField: {
