@@ -41,8 +41,6 @@ export const resizeUserPhoto = asyncHandler(
 );
 export const uploadUserPhotoToCloudinary = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-
-
     if(!req.file){
       return next()
     }
@@ -54,7 +52,7 @@ export const uploadUserPhotoToCloudinary = asyncHandler(
       }
     );
 
-    req.file.filename = result.url
+    req.body.avatarFile = result.secure_url;
     next()
   }
 );
@@ -64,11 +62,11 @@ export const uploadUserPhotoToCloudinary = asyncHandler(
 // A filter function to extract text fileds needs to be updated from req.body
 const filterObj = <T extends Record<string, any>>(
   obj: T,
-  ...allowedFields: (keyof T)[]
+  ...allowedFields: string[]
 ): Partial<T> => {
   const newObj: Partial<T> = {};
   Object.keys(obj).forEach((el) => {
-    if (allowedFields.includes(el as keyof T)) {
+    if (allowedFields.includes(el)) {
       newObj[el as keyof T] = obj[el];
     }
   });
@@ -76,26 +74,22 @@ const filterObj = <T extends Record<string, any>>(
 };
 
 export const updateMe = asyncHandler(
-    async (req: Request, res: Response, next: NextFunction) => {
-
-      const filedsToBeUpdated = filterObj(req.body, 'firstName', 'lastName', 'email', 'gender', 'phone', 'avatarFile')
-      if(req.file) 
-        filedsToBeUpdated.avatarFile = req.file.filename      
-      
-      const updatedUser = await User.findByIdAndUpdate(req.user?.id, filedsToBeUpdated, {
-        new: true,
-        runValidators: true,
-      }).select("-password -passwordConfirm")      
-      
-      res.status(200).json({
-        status: 'success',
-        data:{
-          updatedUser
-        }
-      })
-    }
+  async (req: Request, res: Response, next: NextFunction) => {
+    const filedsToBeUpdated = filterObj(req.body, 'firstName', 'lastName', 'email', 'gender', 'phone', 'avatarFile')      
+    
+    const updatedUser = await User.findByIdAndUpdate(req.user?.id, filedsToBeUpdated, {
+      new: true,
+      runValidators: true,
+    }).select("-password -passwordConfirm")
+    
+    res.status(200).json({
+      status: 'success',
+      data:{
+        updatedUser
+      }
+    })
+  }
 );
-
 export const getMe = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
 

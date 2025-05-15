@@ -18,6 +18,7 @@ export interface IItem extends Document {
   seller: mongoose.Types.ObjectId; 
   material: string; 
   countryOfOrigin: string; 
+  clothingType: "upper" | "lower" | "dress" | "other";
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,7 +85,7 @@ const itemSchema: Schema<IItem> = new Schema<IItem>(
     brand:{
       type: mongoose.Schema.Types.ObjectId,
       ref: "Brand",
-      // required: [true, "Item brand is required"],
+      required: [true, "Item brand is required"],
     },
     material: {
       type: String,
@@ -93,6 +94,11 @@ const itemSchema: Schema<IItem> = new Schema<IItem>(
     countryOfOrigin: {
       type: String,
       //required: true, 
+    },
+      clothingType: {
+      type: String,
+      enum: ["upper", "lower", "dress", "other"],
+      default: "other",
     },
     featured: {
       type: Boolean,

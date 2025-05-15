@@ -137,7 +137,7 @@ export const signUp = asyncHandler(
       })
       //add the brand id to the user object (newUser.brand)      
       newUser.brand = brand.id
-      //console.log(newUser.brand);      
+      console.log(newUser.brand);      
       newUser.save({ validateBeforeSave: false })
     }
     
@@ -153,6 +153,8 @@ export const signIn = asyncHandler(
     if (!email || !password) {
       return next(new AppError("Please provide email and password!", 400));
     }
+    console.log(email, password);
+    
 
     // Find user by email and select the password field explicitly
     const existingUser = await User.findOne({ email }).select("+password");

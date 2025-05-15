@@ -151,6 +151,19 @@ export const uploadItemImagesToCloudinary = asyncHandler(
 //   next();
 // }); 
 
+// Helper function to transform item objects to replace category object with name string
+// const transformItemResponse = (items: IItem[]) => {
+//   return items.map(item => {
+//     const transformedItem = item.toObject();
+    
+//     // Replace category object with category name string
+//     if (transformedItem.category && typeof transformedItem.category === 'object' && transformedItem.category.name) {
+//       transformedItem.category = transformedItem.category.name;
+//     }
+    
+//     return transformedItem;
+//   });
+// };
 
 export const getAllItems = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -163,16 +176,19 @@ export const getAllItems = asyncHandler(
       const categories = Array.isArray(category) ? category : [category]; 
       let categoryIds = [];
       let genderFilter: string[] = [];
+      let genderValues: string[] = [];
+
 
       // Process each category value
       for (const cat of categories) {
         const catString = String(cat);
         
         if (catString.includes("-")) {
-          // Handle combined format like "men-shirts"
-          const [genderValue, categoryName] = catString.split("-");
+           const [genderValue, categoryName] = catString.split("-");
+          
+          // Add gender to the gender filter array
           if (genderValue) {
-            genderFilter.push(genderValue);
+            genderValues.push(genderValue);
           }
           
           if (categoryName) {
@@ -182,7 +198,7 @@ export const getAllItems = asyncHandler(
             });
             categoryIds.push(...foundCategories.map(c => c._id));
           }
-        } else {
+        }else {
           // Handle direct category name or ID
           try {
             // First try to find by ID
@@ -296,6 +312,9 @@ export const getAllItems = asyncHandler(
     // Count total items for pagination
     const totalItems = await Item.countDocuments(filter);
 
+  //  // Transform items to include category name as string
+  //   const transformedItems = transformItemResponse(items);
+
     res.status(200).json({
       status: "success",
       results: items.length,
@@ -303,7 +322,7 @@ export const getAllItems = asyncHandler(
       totalPages: Math.ceil(totalItems / limit),
       currentPage: pageNum,
       data: {
-        items,
+        items
       },
     });
   }
