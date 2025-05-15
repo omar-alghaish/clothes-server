@@ -122,6 +122,10 @@ export const getMyOrders = asyncHandler(
           path: "items.brand",
           model: "Brand",
           select: "brandName brandLogo"
+        })
+        .populate({
+          path: "paymentMethod",
+          select: "methodName"
         });
 
       if (orders.length < 1){

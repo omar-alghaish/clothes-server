@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 interface IPaymentCard extends Document {
+  methodName: string;
   cardHolderName: string;
   cardNumber: string;
   expirationDate: string;
@@ -30,6 +31,10 @@ const paymentCardSchema: Schema = new Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: [true, 'User is required'],
+  },
+  methodName: {
+    type: String,
+    enum: ['visa', 'mastercard', 'paypal'],
   },
 },
 {

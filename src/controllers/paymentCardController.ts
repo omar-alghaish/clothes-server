@@ -5,17 +5,18 @@ import { AppError } from '../utils/appError';
 
 export const createPaymentCard = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { cardHolderName, cardNumber, expirationDate, cvv } = req.body;
+    const { cardHolderName, methodName, cardNumber, expirationDate, cvv } = req.body;
     const userId = req.user?._id; 
 
     // Validate required fields
-    if (!cardHolderName || !cardNumber || !expirationDate || !cvv){
+    if (!cardHolderName || !methodName || !cardNumber || !expirationDate || !cvv){
         return next(new AppError('All card fields are required', 404));
     }
 
     // Create the payment card
     const paymentCard = await PaymentCard.create({
       cardHolderName,
+      methodName,
       cardNumber,
       expirationDate,
       cvv,
