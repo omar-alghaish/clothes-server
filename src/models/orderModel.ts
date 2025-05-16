@@ -20,7 +20,7 @@ export interface IOrder extends Document {
   totalPrice: number;
   status: string; 
   shippingAddress: mongoose.Types.ObjectId;  
-  paymentMethod: mongoose.Types.ObjectId; 
+  paymentMethod: mongoose.Types.ObjectId | null; 
   estimatedDate: Date;
   active: boolean;
   createdAt: Date; 
@@ -98,7 +98,6 @@ const orderSchema: Schema<IOrder> = new Schema<IOrder>(
     paymentMethod: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "PaymentCard",
-      required: [true, "An order must have a payment method."],
     },
     estimatedDate: {
       type: Date,

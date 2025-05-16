@@ -17,9 +17,6 @@ export const createOrder = asyncHandler(
     if (!addressId) {
       return next(new AppError("Address ID is required.", 400));
     }
-    if (!paymentId) {
-      return next(new AppError("Payment ID is required.", 400));
-    }
 
     // Fetch the user's cart
     const cart = await Cart.findOne({ user: userId }).populate("items.product");
@@ -47,13 +44,18 @@ export const createOrder = asyncHandler(
     const totalPrice = subTotal + shipping + tax;
 
     // Handle payment data
-    let paymentMethodId;
-    
-      const payment = await PaymentCard.findById(paymentId);
+    let paymentMethod;
+    let payment;
+
+    if (paymentId === "")
+      paymentMethod = null
+    else{
+      payment = await PaymentCard.findById(paymentId);
       if (!payment) {
         return next(new AppError("Payment not found.", 404));
       }
-      paymentMethodId = paymentId;
+      paymentMethod = paymentId;
+    } 
 
     // Calculate estimated delivery date (3 days from now)
     const estimatedDate = new Date();
@@ -75,7 +77,7 @@ export const createOrder = asyncHandler(
       subTotal,
       totalPrice,
       shippingAddress: addressId, 
-      paymentMethod: paymentMethodId, 
+      paymentMethod, 
       estimatedDate
     });
 
@@ -363,3 +365,5 @@ export const deleteOrder = asyncHandler(
     });
   }
 );
+
+
