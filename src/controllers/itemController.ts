@@ -105,153 +105,86 @@ export const uploadItemImagesToCloudinary = asyncHandler(
   }
 );
 
-
-// function multerFilter(req: Request, file: Express.Multer.File, cb: Function) {
-//   if (file.mimetype.startsWith('image')) cb(null, true);
-//   else cb(new AppError('not an image! please upload only images.', 400), false);
-// }
-// const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
-
-// export const uploaditemImages = upload.fields([
-//   { name: 'imageCover', maxCount: 1 },
-//   { name: 'images', maxCount: 3 },
-// ]);
-
-// export const resizeitemImages = asyncHandler(async (req, res, next) => {
-//   // Ensure req.files exists and has the expected structure
-//   if (!req.files || !('imageCover' in req.files) || !('images' in req.files)) {
-//     return next();
-//   }
-
-//   // 1) Cover image
-//   req.body.imageCover = `item-${req.params.id}-${Date.now()}-cover.jpeg`;
-//   await sharp(req.files.imageCover[0].buffer)
-//     .resize(2000, 1333)
-//     .toFormat('jpeg')
-//     .jpeg({ quality: 90 })
-//     .toFile(`uploads/img/items/${req.body.imageCover}`);
-
-//   // 2) Images
-//   req.body.images = [];
-
-//   await Promise.all(
-//     req.files.images.map(async (file, i) => {
-//       const filename = `item-${req.params.id}-${Date.now()}-${i + 1}.jpeg`;
-
-//       await sharp(file.buffer)
-//         .resize(2000, 1333)
-//         .toFormat('jpeg')
-//         .jpeg({ quality: 90 })
-//         .toFile(`uploads/img/items/${filename}`);
-
-//       req.body.images.push(filename);
-//     })
-//   );
-
-//   next();
-// }); 
-
-// Helper function to transform item objects to replace category object with name string
-// const transformItemResponse = (items: IItem[]) => {
-//   return items.map(item => {
-//     const transformedItem = item.toObject();
-    
-//     // Replace category object with category name string
-//     if (transformedItem.category && typeof transformedItem.category === 'object' && transformedItem.category.name) {
-//       transformedItem.category = transformedItem.category.name;
-//     }
-    
-//     return transformedItem;
-//   });
-// };
-
 export const getAllItems = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
+
     const { page, category, categoryField, gender, color, size, brand, price } = req.query;
 
+
+    // Build the filter object based on query parameters
     const filter: any = {};
-
-    // Handle category filtering - updated for new Category model
-    if (category) {
-      const categories = Array.isArray(category) ? category : [category]; 
-      let categoryIds = [];
-      let genderFilter: string[] = [];
-      let genderValues: string[] = [];
-
-
-      // Process each category value
-      for (const cat of categories) {
-        const catString = String(cat);
+    
+    // Handle gender filter
+    if (req.query.gender) {
+      filter.gender = req.query.gender;
+    }
+    
+    // Handle simple category filter by name
+    if (req.query.category && typeof req.query.category === 'string' && !req.query.category.includes('-')) {
+      const category = await Category.findOne({ name: req.query.category });
+      if (category) {
+        filter.category = category._id;
+      } else {
+        return res.status(200).json({
+          status: "success",
+          results: 0,
+          data: {
+            items: [],
+          },
+        });
+      }
+    }
+    
+    // Handle multiple gender-category filters (e.g., male-jeans, female-sweatshirts)
+    if (req.query.category) {
+      const categoryQueries = Array.isArray(req.query.category) 
+        ? req.query.category 
+        : [req.query.category];
+      
+      const genderCategoryFilters = categoryQueries.filter(cat => 
+        typeof cat === 'string' && cat.includes('-')
+      );
+      
+      if (genderCategoryFilters.length > 0) {
+        const orConditions = [];
         
-        if (catString.includes("-")) {
-           const [genderValue, categoryName] = catString.split("-");
+        for (const genderCat of genderCategoryFilters) {
+          const [gender, categoryName] = (genderCat as string).split('-');
           
-          // Add gender to the gender filter array
-          if (genderValue) {
-            genderValues.push(genderValue);
-          }
-          
-          if (categoryName) {
-            // Find categories by name
-            const foundCategories = await Category.find({ 
-              name: { $regex: new RegExp(`^${categoryName}$`, 'i') } 
-            });
-            categoryIds.push(...foundCategories.map(c => c._id));
-          }
-        }else {
-          // Handle direct category name or ID
-          try {
-            // First try to find by ID
-            const category = await Category.findById(catString);
+          if (gender && categoryName) {
+            const category = await Category.findOne({ name: categoryName });
             if (category) {
-              categoryIds.push(category._id);
-            } else {
-              // If not an ID, find by name
-              const foundCategories = await Category.find({ 
-                name: { $regex: new RegExp(`^${catString}$`, 'i') } 
+              orConditions.push({
+                gender: gender,
+                category: category._id
               });
-              categoryIds.push(...foundCategories.map(c => c._id));
             }
-          } catch (error) {
-            // If ID lookup fails, find by name
-            const foundCategories = await Category.find({ 
-              name: { $regex: new RegExp(`^${catString}$`, 'i') } 
-            });
-            categoryIds.push(...foundCategories.map(c => c._id));
+          }
+        }
+        
+        if (orConditions.length > 0) {
+          if (filter.category) {
+            const existingFilter = { ...filter };
+            filter.$or = [
+              existingFilter,
+              ...orConditions
+            ];
+            delete filter.category;
+            if (existingFilter.gender) {
+              delete filter.gender;
+            }
+          } else {
+            filter.$or = orConditions;
+            if (filter.gender) {
+              delete filter.gender;
+            }
           }
         }
       }
-
-      // Add category filter if categories were found
-      if (categoryIds.length > 0) {
-        filter.category = { $in: categoryIds };
-      }
-      
-      // Add gender filter from category parameters
-      if (genderFilter.length > 0) {
-        filter.gender = { $in: genderFilter };
-      }
     }
-
-    // Handle categoryField filter
-    if (categoryField) {
-      const categoryFields = Array.isArray(categoryField) ? categoryField.map(String) : [String(categoryField)];
-      filter.categoryField = { $in: categoryFields };
-    }
-
-    // Handle separate gender parameter
-    if (gender) {
-      const genderValues = Array.isArray(gender) ? gender.map(String) : [String(gender)];
-      // If we already have a gender filter, merge with any genders from category parameters
-      if (filter.gender) {
-        filter.gender.$in = [...new Set([...filter.gender.$in, ...genderValues])];
-      } else {
-        filter.gender = { $in: genderValues };
-      }
-    }
-
-    // Handle color 
-    if (color) {
+    
+     // Handle color 
+     if (color) {
       const colors = Array.isArray(color) ? color.map(String) : [String(color)]; 
       filter.colors = { $in: colors };
     }
