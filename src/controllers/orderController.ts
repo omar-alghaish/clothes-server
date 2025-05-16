@@ -95,6 +95,10 @@ export const createOrder = asyncHandler(
         path: "items.brand",
         model: "Brand",
         select: "brandName brandLogo"
+      })
+      .populate({
+        path: "paymentMethod",
+        select: "methodName"
       });
 
     // Send the response
