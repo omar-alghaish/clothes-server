@@ -4,13 +4,12 @@ import * as authController from '../controllers/authController';
 
 const router = express.Router();
 
+router.get('/', categoryController.getAllCategories);
+router.get('/:id', categoryController.getCategory);
+
 // Protected routes for admins only
 router.use(authController.protect);
 router.use(authController.restrictTo('admin'));
-
-
-router.get('/', categoryController.getAllCategories);
-router.get('/:id', categoryController.getCategory);
 
 
 router.post('/', categoryController.createCategory);

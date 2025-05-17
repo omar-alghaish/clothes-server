@@ -17,7 +17,7 @@ router.patch("/:id",
 
 //Admin routes
 
-router.get("/", protect, restrictTo('admin'), getAllBrands)
+router.get("/", getAllBrands)
 router.patch("/:id/active", protect, restrictTo('admin'), updateBrandActive);
 router.delete("/:id", protect, restrictTo('admin'), deleteBrand)
 

@@ -7,6 +7,7 @@ import { deleteItem } from "../controllers/itemController";
 import { getOneItem } from "../controllers/itemController";
 import { getNewArrivals } from "../controllers/itemController";
 import { getFeaturedItems } from "../controllers/itemController";
+import { searchItems } from "../controllers/itemController";
 
 const multer  = require('multer')
 import {protect, restrictTo, getSellerItems} from '../controllers/authController'
@@ -18,6 +19,7 @@ const upload = multer({ dest: './../uploads' })
 
 // seller endpoints
 router.get("/my-items", protect, getSellerItems);
+router.get("/search", searchItems);
 router.get("/new-arrivals", getNewArrivals);
 router.get("/featured", getFeaturedItems);
 

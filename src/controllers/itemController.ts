@@ -261,6 +261,59 @@ export const getAllItems = asyncHandler(
   }
 );
 
+export const searchItems = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    // Get the search query from the request
+    const { query } = req.query;
+    
+    if (!query || typeof query !== 'string') {
+      return res.status(400).json({
+        status: "fail",
+        message: "Search query is required"
+      });
+    }
+
+    // Create a regex for case-insensitive search
+    const searchRegex = new RegExp(query, 'i');
+    
+    // Search for items where name or description matches the query
+    const items = await Item.find({
+      $or: [
+        { name: searchRegex },
+        { description: searchRegex }
+      ]
+    })
+    .populate([
+      {
+        path: 'brand',
+        select: 'brandName brandLogo'
+      },
+      {
+        path: 'category',
+        select: 'name parentCategory'
+      }
+    ])
+    .limit(20); // Limit results to prevent overwhelming response
+
+    // Add pagination if needed
+    const totalItems = await Item.countDocuments({
+      $or: [
+        { name: searchRegex },
+        { description: searchRegex }
+      ]
+    });
+
+    res.status(200).json({
+      status: "success",
+      results: items.length,
+      totalItems,
+      data: {
+        items
+      }
+    });
+  }
+);
+
 export const getNewArrivals = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     // Calculate the date 7 days ago
@@ -349,7 +402,7 @@ export const getOneItem = asyncHandler(
       category: item.category,
       _id: { $ne: item._id } // Exclude the current item
     })
-    .select('_id name img price') // Select only necessary fields
+    .select('_id name img price clothingType') // Select only necessary fields
     .limit(3);
 
     res.status(200).json({
