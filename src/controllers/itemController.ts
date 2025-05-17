@@ -326,6 +326,7 @@ export const getFeaturedItems = asyncHandler(
   }
 );
 
+
 export const getOneItem = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const item = await Item.findById(req.params.id).populate([
@@ -343,15 +344,23 @@ export const getOneItem = asyncHandler(
       return next(new AppError("No item found", 404));
     }
 
+    // Get related items from the same category, excluding the current item
+    const relatedItems = await Item.find({ 
+      category: item.category,
+      _id: { $ne: item._id } // Exclude the current item
+    })
+    .select('_id name img price') // Select only necessary fields
+    .limit(3);
+
     res.status(200).json({
       status: "success",
       data: {
         item,
+        relatedItems
       },
     });
   }
 );
-
 export const createItem = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {  
    
