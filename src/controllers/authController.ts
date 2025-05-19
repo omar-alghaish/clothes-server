@@ -52,33 +52,44 @@ const createSendToken = (user: IUser, status: number, res: Response, brand?: IBr
 
 // Middleware to upload brand logo
 
-const multerStorage = multer.memoryStorage()
+const multerStorage = multer.memoryStorage();
 
 function multerFilter(req: Request, file: Express.Multer.File, cb: Function) {
   if (file.mimetype.startsWith('image')) cb(null, true);
-  else cb(new AppError('not an image! please upload only images.', 400), false);
+  else cb(new AppError('Not an image! Please upload only images.', 400), false);
 }
 
-const upload = multer({ storage: multerStorage, fileFilter: multerFilter });
+const upload = multer({ 
+  storage: multerStorage, 
+  fileFilter: multerFilter,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
 
 export const uploadBrandLogo = upload.single('brandLogo');
 
 export const resizeBrandLogo = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    
     if (!req.file) return next();
 
-    // Resize and format the brand logo
-    req.file.filename = `brand-${Date.now()}-logo.jpeg`;
+    try {
+      // Assign unique filename
+      req.file.filename = `brand-${Date.now()}-logo.jpeg`;
 
-    await sharp(req.file.buffer)
-      .resize(500, 500) // Resize to 500x500 pixels (adjust as needed)
-      .toFormat('jpeg')
-      .jpeg({ quality: 90 })
-      //.toFile(path.join(__dirname, '..', 'uploads', req.file.filename)); // Uncomment if saving locally
-
-    req.body.brandLogo = req.file.filename; // Save the filename for Cloudinary upload
-    next();
+      // Process image with sharp
+      const processedImageBuffer = await sharp(req.file.buffer)
+        .resize(500, 500)
+        .toFormat('jpeg')
+        .jpeg({ quality: 90 })
+        .toBuffer();
+        
+      // Store processed buffer back to req.file for next middleware
+      req.file.buffer = processedImageBuffer;
+      
+      next();
+    } catch (error) {
+      console.error("Image processing error:", error);
+      return next(new AppError('Error processing image. Please try again.', 500));
+    }
   }
 );
 
@@ -86,59 +97,110 @@ export const uploadBrandLogoToCloudinary = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     if (!req.file) return next();
 
-    // Upload the brand logo to Cloudinary
-    const result = await cloudinary.uploader.upload(
-      `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`,
-      {
-        folder: 'uploads/brands', // Folder in Cloudinary
-      }
-    );
+    try {
+      // Convert buffer to base64
+      const base64Image = req.file.buffer.toString('base64');
+      const dataURI = `data:${req.file.mimetype};base64,${base64Image}`;
+      
+      // Upload to Cloudinary
+      const result = await cloudinary.uploader.upload(dataURI, {
+        folder: 'uploads/brands',
+        resource_type: 'image'
+      });
 
-    req.body.brandLogo = result.secure_url; // Save the Cloudinary URL
-    next();
+      console.log("Cloudinary upload successful:", result.secure_url);
+      
+      // Set the secure URL in the request body
+      req.body.brandLogo = result.secure_url;
+      next();
+    } catch (error) {
+      console.error("Cloudinary upload error:", error);
+      return next(new AppError('Failed to upload image to Cloudinary. Please try again.', 500));
+    }
   }
 );
 
-
 export const signUp = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    // const {firstName, lastName, email, password} = req.body
-  
-    
-    const { firstName, lastName, email, password, passwordConfirm, role, brandName, brandDescription, brandStyle,
-      primaryColor, businessAddress, phoneNumber, website, taxId } = req.body;
+    const { firstName, lastName, email, password, passwordConfirm, role, 
+            brandName, brandDescription, brandStyle, primaryColor, 
+            businessAddress, phoneNumber, website, taxId } = req.body;
       
-    if(!email) 
-      return next(new AppError('email is required!', 400));
-    if(!firstName)
-      return next(new AppError('firstName is required!', 400));
-    if(!lastName) 
-      return next(new AppError('lastName is required!', 400));
-    if(!password)
-      return next(new AppError('password is required!', 400));
+    // Basic validation
+    if(!email) return next(new AppError('Email is required!', 400));
+    if(!firstName) return next(new AppError('First name is required!', 400));
+    if(!lastName) return next(new AppError('Last name is required!', 400));
+    if(!password) return next(new AppError('Password is required!', 400));
 
-    if (role === "seller" && (!brandName || !brandDescription || !brandStyle || !req.body.brandLogo ||
-      !primaryColor || !businessAddress || !phoneNumber || !taxId)) {
-        return next(new AppError('Brand details are required for seller registration!', 400));
+    // Debug logs
+    console.log('Registration data:', {
+      role,
+      brandName,
+      brandDescription,
+      brandStyle,
+      brandLogo: req.body.brandLogo ? 'Logo present' : 'Logo missing',
+      primaryColor,
+      phoneNumber,
+      taxId
+    });
+
+    // Validate seller specific fields
+    if (role === "seller") {
+      if (!brandName) return next(new AppError('Brand name is required!', 400));
+      if (!brandDescription) return next(new AppError('Brand description is required!', 400));
+      if (!brandStyle) return next(new AppError('Brand style is required!', 400));
+      if (!primaryColor) return next(new AppError('Primary color is required!', 400));
+      if (!businessAddress) return next(new AppError('Business address is required!', 400));
+      if (!phoneNumber) return next(new AppError('Phone number is required!', 400));
+      if (!taxId) return next(new AppError('Tax ID is required!', 400));
+      
+      // Only check for brandLogo if this is not coming from a file upload
+      if (!req.file && !req.body.brandLogo) {
+        return next(new AppError('Brand logo is required!', 400));
+      }
     }
     
     if (password !== passwordConfirm) {
-      return next(new AppError("password and passwordConfirm do not match.", 400));
+      return next(new AppError("Password and password confirmation do not match.", 400));
     }
+
+    // Create user first
     const newUser = await User.create({
       firstName, lastName, email, password, passwordConfirm, role
     });
 
     let brand;    
     if(role === "seller"){
+      try {
+        // Ensure brandLogo is a string
+        const brandLogoUrl = typeof req.body.brandLogo === 'string' 
+          ? req.body.brandLogo 
+          : 'default-brand-logo.jpg'; // Fallback default image
+          
+        // Create brand with properly formatted data
         brand = await Brand.create({
-        brandName, brandDescription, brandStyle, brandLogo: req.body.brandLogo, primaryColor, businessAddress, phoneNumber,
-        website, taxId, user: newUser.id
-      })
-      //add the brand id to the user object (newUser.brand)      
-      newUser.brand = brand.id
-      console.log(newUser.brand);      
-      newUser.save({ validateBeforeSave: false })
+          brandName, 
+          brandDescription, 
+          brandStyle, 
+          brandLogo: brandLogoUrl, 
+          primaryColor, 
+          businessAddress, 
+          phoneNumber,
+          website, 
+          taxId, 
+          user: newUser.id
+        });
+        
+        // Link brand to user
+        newUser.brand = brand.id;
+        await newUser.save({ validateBeforeSave: false });
+      } catch (error) {
+        console.error("Brand creation error:", error);
+        
+        // Rollback user creation if brand creation fails
+        await User.findByIdAndDelete(newUser.id);
+        return next(new AppError('Failed to create brand. Please try again.', 500));
+      }
     }
     
     createSendToken(newUser, 201, res, brand);
