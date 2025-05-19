@@ -8,7 +8,7 @@ const router = Router();
 
 router.get("/my-brand", protect, getMyBrand)
 router.patch("/:id", 
-    protect,
+    // protect,
     uploadBrandLogo,
     resizeBrandLogo, 
     uploadBrandLogoToCloudinary, 

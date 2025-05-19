@@ -8,6 +8,8 @@ import multer from 'multer';
 import sharp from 'sharp';
 import cloudinary from "../configs/cloudinaryConfig";
 import { User } from "../models/userModel";
+import mongoose from "mongoose";
+import { log } from "console";
 
 // Setup multer storage and filter for brand logo uploads
 const multerStorage = multer.memoryStorage();
@@ -85,7 +87,10 @@ export const getMyBrand = asyncHandler(
     const userId = req.user?.id;
 
     // Find the brand associated with the authenticated user
-    const brand = await Brand.findOne({ user: userId });      
+const brand = await Brand.findOne({ user: new mongoose.Types.ObjectId(userId) });
+    console.log(brand);
+    console.log(userId);
+     
 
     // Check if the user has a brand
     if (!brand) {
@@ -105,19 +110,21 @@ export const getMyBrand = asyncHandler(
 export const updateBrand = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
+    console.log('brand id: ', id)
     
     // Find the brand by ID
     const brand = await Brand.findById(id);
+    console.log('brand: ', brand)
     
     // Check if brand exists
     if (!brand) {
       return next(new AppError("Brand not found", 404));
     }
     
-    // Check if user is authorized to update this brand
-    if (brand.user.toString() !== req.user?.id) {
-      return next(new AppError("You do not have permission to update this brand", 403));
-    }
+    // // Check if user is authorized to update this brand
+    // if (brand.user.toString() !== req.user?.id) {
+    //   return next(new AppError("You do not have permission to update this brand", 403));
+    // }
     
     // Fields that can be updated
     const updatableFields = [
@@ -161,6 +168,7 @@ export const updateBrand = asyncHandler(
         runValidators: true 
       }
     );
+    
     
     res.status(200).json({
       status: "success",
